@@ -14,9 +14,9 @@ const authMiddleware = async (req, res, next) => {
             throw new Error('Token not found in database');
         }
 
-        req.userId = decoded.userId;
+        req.userID = decoded.userID;
         req.token = token;
-        console.log('Authentication successful for user:', req.userId);
+        console.log('Authentication successful for user:', req.userID);
         next();
     } catch (error) {
         console.error('Auth error:', error.message);

@@ -1,13 +1,14 @@
 const express = require('express');
-const ChatController = require('../controllers/index').ChatController;
-const AuthController = require('../controllers/AuthController');
-const UserController = require('../controllers/UserController');
 const authRoutes = require('./authRoutes');
 const userRoutes = require('./userRoutes');
+const conversationRoutes = require('./conversationRoutes');
+const messageRoutes = require('./messageRoutes');
 
 const setRoutes = (app) => {
     app.use('/api/auth', authRoutes);
     app.use('/api/users', userRoutes);
+    app.use('/api/conversations', conversationRoutes);
+    app.use('/api/messages', messageRoutes);
 };
 
 module.exports = setRoutes;

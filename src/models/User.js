@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    ID: {
+    userID: {
         type: String,
         hashKey: true,
     },
@@ -24,7 +24,17 @@ const schema = new mongoose.Schema({
     phone: String,
     urlavatar: String,
     birthday: String,
+    settings: {
+        block_msg_from_strangers: {
+            type: Boolean,
+            default: false
+        },
+    },
     friendList: {
+        type: Array,
+        schema: [String],
+    },
+    blockList: {
         type: Array,
         schema: [String],
     },

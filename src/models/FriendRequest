@@ -1,22 +1,20 @@
-import Message from "./Message";
-
 const dynamoose = require("dynamoose");
 const mongoose = require('mongoose');
 
 const { v4: uuidv4 } = require("uuid");
 
 const schema = new mongoose.Schema({
-  id: {
+  friendRequestID: {
     type: "string",
     hashKey: true,
     index: true,
     default: () => uuidv4(),
   },
-  senderId: {
+  senderID: {
     type: "string",
     index: true,
   },
-  receiverId: {
+  receiverID: {
     type: "string",
     index: true,
   },

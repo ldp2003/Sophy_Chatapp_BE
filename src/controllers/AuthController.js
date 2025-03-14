@@ -35,7 +35,7 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid password' });
             }
 
-            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+            const token = jwt.sign({ userID:  user._id}, process.env.JWT_SECRET);
 
             await Token.create({
                 userId: user._id,
@@ -50,6 +50,8 @@ class AuthController {
                     fullname: user.fullname
                 }
             });
+
+            await User.findOneAndUpdate({ userID: user.userID }, { lastActive: new Date () });
         } catch (error) {
             console.error('Login error:', error);
             res.status(500).json({ message: error.message });
@@ -60,6 +62,7 @@ class AuthController {
         try {
             const token = req.header('Authorization').replace('Bearer ', '');
             await Token.findOneAndDelete({ token });
+            await User.findOneAndUpdate({ userID: token.userId }, { lastActive: new Date () });  
             res.json({ message: 'Logged out successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });

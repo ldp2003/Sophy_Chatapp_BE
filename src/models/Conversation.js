@@ -3,36 +3,49 @@ const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    IDConversation: {
+    conversationID: {
         type: String,
         hashKey: true,
     },
-    IDCreator: {  
+    creatorID: {
         type: String,
         rangeKey: true,
         index: {
             global: true,
-            name: 'IDCreator-lastChange-index', 
+            name: 'IDCreator-lastChange-index',
             rangeKey: 'lastChange',
             project: false,
         },
     },
     isGroup: Boolean,
     groupName: String,
-    groupAvatar: String,
-    IDReceiver: String,
-    IDNewestMessage: String,
+    groupAvatarUrl: {
+        type: String,
+        default: null
+    },
+    receiverID: String,
+    newestMessageID: String,
+    lastMessage: {
+        type: Object,
+        schema: {
+            content: String,
+            type: String,
+            senderID: String,
+            createdAt: String
+        },
+        default: null
+    },
     isBlock: Boolean,
     rules: {
         type: Object,
         schema: {
-          IDOwner: String,
-          listIDCoOwner: {
-            type: Array,
-            schema: [String]
-          }
+            ownerID: String,
+            coOwnerIDs: {
+                type: Array,
+                schema: [String]
+            }
         }
-      },
+    },
     groupMembers: {
         type: Array,
         default: [],
@@ -53,7 +66,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                IDMessageDetail: String,
+                messageDetailID: String,
                 pinnedBy: String,
                 pinnedAt: String
             }
@@ -65,7 +78,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                IDUser: String,
+                userID: String,
                 muteUntil: {
                     type: String,
                     default: null // null = mute vĩnh viễn
@@ -89,7 +102,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                IDUser: String,
+                userID: String,
                 count: {
                     type: Number,
                     default: 0
@@ -106,7 +119,7 @@ const schema = new mongoose.Schema({
         type: String,
         default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
     },
-    
+
     lastChange: {
         type: String,
         default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
