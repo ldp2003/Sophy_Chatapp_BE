@@ -1,7 +1,8 @@
 const dynamoose = require('dynamoose');
 const moment = require('moment-timezone');
+const mongoose = require('mongoose');
 
-const schema = new dynamoose.Schema({
+const schema = new mongoose.Schema({
     IDConversation: {
         type: String,
         hashKey: true,

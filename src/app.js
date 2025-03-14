@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const connectDB = require('./config/database');
 const http = require('http');
 const socketIo = require('socket.io');
 require('dotenv').config();
@@ -29,6 +30,9 @@ io.on('connection', (socket) => {
 // Import routes
 const setRoutes = require('./routes/index');
 setRoutes(app);
+
+// Connect to MongoDB
+connectDB();
 
 // Start server
 const PORT = process.env.PORT || 3000;

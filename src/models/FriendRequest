@@ -1,9 +1,11 @@
 import Message from "./Message";
 
 const dynamoose = require("dynamoose");
+const mongoose = require('mongoose');
+
 const { v4: uuidv4 } = require("uuid");
 
-const schema = new dynamoose.Schema({
+const schema = new mongoose.Schema({
   id: {
     type: "string",
     hashKey: true,

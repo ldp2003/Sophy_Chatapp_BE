@@ -1,7 +1,8 @@
 const dynamoose = require("dynamoose");
 const moment = require('moment-timezone');
+const mongoose = require('mongoose');
 
-const schema = new dynamoose.Schema({
+const schema = new mongoose.Schema({
     ID: {
         type: String,
         hashKey: true,
@@ -39,6 +40,6 @@ const schema = new dynamoose.Schema({
 });
 
 //const User = dynamoose.model("User", schema);
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', schema);
 
 module.exports = User;
