@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const Token = require('../models/Token');
 
 class AuthController {
     async login(req, res) {
@@ -34,8 +35,11 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid password' });
             }
 
-            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-                expiresIn: '24h'
+            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+
+            await Token.create({
+                userId: user._id,
+                token: token
             });
 
             res.json({ 
@@ -48,6 +52,16 @@ class AuthController {
             });
         } catch (error) {
             console.error('Login error:', error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async logout(req, res) {
+        try {
+            const token = req.header('Authorization').replace('Bearer ', '');
+            await Token.findOneAndDelete({ token });
+            res.json({ message: 'Logged out successfully' });
+        } catch (error) {
             res.status(500).json({ message: error.message });
         }
     }

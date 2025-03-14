@@ -1,0 +1,37 @@
+// Connect to chat_app database
+use chat_app
+
+// Create a sample user
+db.users.insertOne({
+    username: "user123",
+    password: "$2b$10$5YgRm9UmJxsxsVVV6YY5O.YX3YeZOfY.P1I4h8aC.3zvXfGqJ0yQi", // hashed "12345678"
+    fullname: "Test User",
+    phone: "0123456789",
+    isMale: true,
+    urlavatar: "https://example.com/default-avatar.png",
+    birthday: "1990-01-01",
+    friendList: [],
+    lastActive: new Date(),
+    deviceTokens: [],
+    status: "offline"
+})
+
+// Create some sample friend users
+db.users.insertMany([
+    {
+        username: "friend1",
+        password: "$2b$10$5YgRm9UmJxsxsVVV6YY5O.YX3YeZOfY.P1I4h8aC.3zvXfGqJ0yQi",
+        fullname: "Friend One",
+        phone: "0987654321",
+        isMale: false,
+        lastActive: new Date()
+    },
+    {
+        username: "friend2",
+        password: "$2b$10$5YgRm9UmJxsxsVVV6YY5O.YX3YeZOfY.P1I4h8aC.3zvXfGqJ0yQi",
+        fullname: "Friend Two",
+        phone: "0987654322",
+        isMale: true,
+        lastActive: new Date()
+    }
+])
