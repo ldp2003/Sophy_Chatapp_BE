@@ -6,7 +6,14 @@ const schema = new dynamoose.Schema({
         hashKey: true,
     },
     IDSender: String,
-    IDConversation: String,
+    IDConversation: {
+        type: String,
+        index: {
+            global: true,
+            name: 'IDConversation-dateTime-index',
+            rangeKey: 'dateTime'
+        }
+    },
     type: String,
     content: String,
     dateTime: {
@@ -21,10 +28,6 @@ const schema = new dynamoose.Schema({
         type: Boolean,
         default: false,
     },
-    isPass: {
-        type: Boolean,
-        default: false,
-    },
     isReply: {
         type: Boolean,
         default: false,
@@ -33,8 +36,139 @@ const schema = new dynamoose.Schema({
         type: String,
         default: null,
     },
+    replyData: {
+        type: Object,
+        schema: {
+            content: String,
+            type: String,
+            senderName: String
+        },
+        default: null
+    },
+    isPinned: {
+        type: Boolean,
+        default: false,
+    },
+    pinnedAt: {
+        type: String,
+        default: null,
+    },
+    reactions: {
+        type: Array,
+        schema: [{
+            type: Object,
+            schema: {
+                IDUser: String,
+                reaction: String, 
+                createdAt: String
+            }
+        }],
+        default: []
+    },
+    attachments: {
+        type: Array,
+        schema: [{
+            type: Object,
+            schema: {
+                type: String, 
+                url: String,
+                name: String,
+                size: Number,
+                mimeType: String
+            }
+        }],
+        default: []
+    },
+    poll: {
+        type: Object,
+        schema: {
+            question: String,
+            options: {
+                type: Array,
+                schema: [{
+                    type: Object,
+                    schema: {
+                        text: String,
+                        votes: {
+                            type: Array,
+                            schema: [String],
+                            default: []
+                        }
+                    }
+                }]
+            },
+            isMultipleChoice: {
+                type: Boolean,
+                default: false
+            },
+            expiresAt: String
+        },
+        default: null
+    },
+    sendStatus: {
+        type: String,
+        enum: ['sending', 'sent', 'error'],
+        default: 'sending'
+    },
+    linkPreview: {
+        type: Object,
+        schema: {
+            url: String,
+            title: String,
+            description: String,
+            image: String,
+            siteName: String
+        },
+        default: null
+    },
+
+    deletedFor: {
+        type: Array,
+        schema: [String],
+        default: []
+    },
+    readBy: {
+        type: Array,
+        schema: [{
+            type: Object,
+            schema: {
+                IDUser: String,
+                readAt: String
+            }
+        }],
+        default: []
+    },
+    isForwarded: {
+        type: Boolean,
+        default: false
+    },
+    forwardData: {
+        type: Object,
+        schema: {
+            fromMessage: {
+                IDMessageDetail: String,
+                IDConversation: String,
+                IDSender: String
+            },
+            forwardedAt: String,
+            forwardedBy: String
+        },
+        default: null
+    },
+    deliveredTo: {
+        type: Array,
+        schema: [{
+            type: Object,
+            schema: {
+                IDUser: String,
+                deliveredAt: String
+            }
+        }],
+        default: []
+    },
 });
 
-const MessageDetail = dynamoose.model("MessageDetail", schema);
+//const MessageDetail = dynamoose.model("MessageDetail", schema);
+const MessageDetail = mongoose.model('MessageDetail', schema);
 
 module.exports = MessageDetail;

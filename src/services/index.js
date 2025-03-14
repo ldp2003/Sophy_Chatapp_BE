@@ -4,6 +4,7 @@ class ChatService {
     }
 
     authenticateUser(username, password) {
+        
         // Logic for user authentication
     }
 

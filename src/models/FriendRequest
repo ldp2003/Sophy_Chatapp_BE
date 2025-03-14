@@ -1,3 +1,5 @@
+import Message from "./Message";
+
 const dynamoose = require("dynamoose");
 const { v4: uuidv4 } = require("uuid");
 
@@ -16,8 +18,15 @@ const schema = new dynamoose.Schema({
     type: "string",
     index: true,
   },
- 
-  status: String, // pending, accepted, rejected
+  message: {
+    type: "string",
+    default: "",
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending'
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -28,5 +37,7 @@ const schema = new dynamoose.Schema({
   },
 });
 
-const FriendRequest = dynamoose.model("FriendRequest", schema);
+//const FriendRequest = dynamoose.model("FriendRequest", schema);
+const FriendRequest = mongoose.model('FriendRequest', schema);
+
 module.exports = FriendRequest;

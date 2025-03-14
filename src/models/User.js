@@ -1,14 +1,25 @@
 const dynamoose = require("dynamoose");
+const moment = require('moment-timezone');
 
 const schema = new dynamoose.Schema({
     ID: {
         type: String,
         hashKey: true,
     },
-    username: String,
-    password: String,
+    username: {
+        type: String,
+        required: true,
+        index: {
+            global: true,
+            name: 'username-index'
+        }
+    },
+    password: {
+        type: String,
+        required: true
+    },
     fullname: String,
-    ismale: Boolean,
+    isMale: Boolean,
     phone: String,
     urlavatar: String,
     birthday: String,
@@ -16,8 +27,18 @@ const schema = new dynamoose.Schema({
         type: Array,
         schema: [String],
     },
+    lastActive: {
+        type: String,
+        default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS')
+    },
+    deviceTokens: {
+        type: Array,
+        schema: [String],
+        default: []
+    }
 });
 
-const User = dynamoose.model("User", schema);
+//const User = dynamoose.model("User", schema);
+const User = mongoose.model('User', userSchema);
 
 module.exports = User;
