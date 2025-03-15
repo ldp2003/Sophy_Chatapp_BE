@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const Token = require('../models/Token');
+require('dotenv').config();
 
 class AuthController {
     async login(req, res) {
