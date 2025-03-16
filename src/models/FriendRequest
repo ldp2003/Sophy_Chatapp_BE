@@ -4,17 +4,17 @@ const mongoose = require('mongoose');
 const { v4: uuidv4 } = require("uuid");
 
 const schema = new mongoose.Schema({
-  friendRequestID: {
+  friendRequestId: {
     type: "string",
     hashKey: true,
     index: true,
     default: () => uuidv4(),
   },
-  senderID: {
+  senderId: {
     type: "string",
     index: true,
   },
-  receiverID: {
+  receiverId: {
     type: "string",
     index: true,
   },

@@ -3,16 +3,16 @@ const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    messageDetailID: {
+    messageDetailId: {
         type: String,
         hashKey: true,
     },
-    senderID: String,
-    conversationID: {
+    senderId: String,
+    conversationId: {
         type: String,
         index: {
             global: true,
-            name: 'IDConversation-dateTime-index',
+            name: 'conversationId-dateTime-index',
             rangeKey: 'dateTime'
         }
     },
@@ -22,9 +22,10 @@ const schema = new mongoose.Schema({
         type: String,
         default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
     },
-    isRemove: {
-        type: Boolean,
-        default: false,
+    hiddenFrom: {
+        type: Array,
+        schema: [String],  // Mảng userIdS những ai (đã xóa tin nhắn) sẽ không thấy tin nhắn này
+        default: []
     },
     isRecall: {
         type: Boolean,
@@ -34,7 +35,7 @@ const schema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
-    messageReplyID: {
+    messageReplyId: {
         type: String,
         default: null,
     },
@@ -43,7 +44,7 @@ const schema = new mongoose.Schema({
         schema: {
             content: String,
             type: String,
-            senderName: String
+            senderId: String
         },
         default: null
     },
@@ -60,7 +61,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                userID: String,
+                userId: String,
                 reaction: String, 
                 createdAt: String
             }
@@ -133,7 +134,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                userID: String,
+                userId: String,
                 readAt: String
             }
         }],
@@ -144,7 +145,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                userID: String,
+                userId: String,
                 deliveredAt: String
             }
         }],

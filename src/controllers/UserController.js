@@ -28,10 +28,7 @@ class UserController {
             }
 
             const users = await User.find({
-                $or: [
-                    { fullname: { $regex: searchParam, $options: 'i' } },
-                    { username: { $regex: searchParam, $options: 'i' } }
-                ]
+                fullname: { $regex: searchParam, $options: 'i' } 
             }).select('-password');
 
             res.json(users);

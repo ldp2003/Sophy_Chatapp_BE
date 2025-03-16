@@ -3,16 +3,16 @@ const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    conversationID: {
+    conversationId: {
         type: String,
         hashKey: true,
     },
-    creatorID: {
+    creatorId: {
         type: String,
         rangeKey: true,
         index: {
             global: true,
-            name: 'IDCreator-lastChange-index',
+            name: 'creatorId-lastChange-index',
             rangeKey: 'lastChange',
             project: false,
         },
@@ -23,14 +23,18 @@ const schema = new mongoose.Schema({
         type: String,
         default: null
     },
-    receiverID: String,
-    newestMessageID: String,
+    background:{
+        type: String,
+        default: null
+    },
+    receiverId: String,
+    newestMessageId: String,
     lastMessage: {
         type: Object,
         schema: {
             content: String,
             type: String,
-            senderID: String,
+            senderId: String,
             createdAt: String
         },
         default: null
@@ -39,8 +43,8 @@ const schema = new mongoose.Schema({
     rules: {
         type: Object,
         schema: {
-            ownerID: String,
-            coOwnerIDs: {
+            ownerId: String,
+            coOwnerIds: {
                 type: Array,
                 schema: [String]
             }
@@ -66,7 +70,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                messageDetailID: String,
+                messageDetailId: String,
                 pinnedBy: String,
                 pinnedAt: String
             }
@@ -78,7 +82,7 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                userID: String,
+                userId: String,
                 muteUntil: {
                     type: String,
                     default: null // null = mute vĩnh viễn
@@ -102,12 +106,12 @@ const schema = new mongoose.Schema({
         schema: [{
             type: Object,
             schema: {
-                userID: String,
+                userId: String,
                 count: {
                     type: Number,
                     default: 0
                 },
-                lastReadMessageID: {
+                lastReadMessageId: {
                     type: String,
                     default: null
                 }

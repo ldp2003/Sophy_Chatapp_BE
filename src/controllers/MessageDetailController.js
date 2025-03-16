@@ -5,115 +5,63 @@ const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
 
 class MessageDetailController {
-    async loadMessageByConversation(req, res) {
-        try {
-            const { IDConversation } = req.params;
-            const { page = 1, limit = 20 } = req.query;
-            const userId = req.userId;
-
-            // Check conversation access
-            const conversation = await Conversation.findOne({
-                IDConversation,
-                $or: [
-                    { IDCreator: userId },
-                    { IDReceiver: userId },
-                    { groupMembers: userId }
-                ]
-            });
-
-            if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' });
-            }
-
-            // Get messages with pagination
-            const messages = await MessageDetail.find({ IDConversation })
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit);
-
-            // Update read status
-            await MessageDetail.updateMany(
-                {
-                    IDConversation,
-                    IDSender: { $ne: userId },
-                    'readBy.IDUser': { $ne: userId }
-                },
-                {
-                    $push: {
-                        readBy: {
-                            IDUser: userId,
-                            readAt: new Date().toISOString()
-                        }
-                    }
-                }
-            );
-
-            res.json(messages);
-        } catch (error) {
-            res.status(500).json({ message: error.message });
-        }
-    }
-
     async sendMessage(req, res) {
         try {
-            const { conversationID, content, type = 'text', attachments = [] } = req.body;
-            const senderID = req.userId;
+            const { conversationId, content, type = 'text', attachments = [] } = req.body;
+            const senderId = req.userId;
 
             const conversation = await Conversation.findOne({
-                conversationID,
+                conversationId,
                 $or: [
-                    { creatorID: senderID },
-                    { receiverID: senderID },
-                    { groupMembers: senderID }
+                    { creatorId: senderId },
+                    { receiverId: senderId },
+                    { groupMembers: senderId }
                 ]
             });
 
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
-        
+
 
             if (!conversation.isGroup) {
-                const receiver = conversation.creatorID === senderID ? 
-                               await User.findById(conversation.receiverID) : 
-                               await User.findById(conversation.creatorID);
-    
-                if (receiver.blockedUsers?.includes(senderID)) {
+                const receiver = conversation.creatorId === senderId ?
+                    await User.findById(conversation.receiverId) :
+                    await User.findById(conversation.creatorId);
+
+                if (receiver.blockedUsers?.includes(senderId)) {
                     return res.status(403).json({ message: 'You have been blocked by the recipient' });
                 }
-    
-                // Check if sender is a stranger and receiver blocks stranger messages
+
                 const isFriend = await FriendRequest.findOne({
                     $or: [
-                        { senderID: senderID, receiverId: receiver.userID, status: 'accepted' },
-                        { senderID: receiver.userID, receiverId: senderID, status: 'accepted' }
+                        { senderId: senderId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: senderId, status: 'accepted' }
                     ]
                 });
-    
+
                 if (!isFriend && receiver.settings?.block_msg_from_strangers) {
                     return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
                 }
             }
 
-            // Create new message
-            const messageDetailID = uuidv4();
+            const messageDetailId = uuidv4();
             const message = await MessageDetail.create({
-                messageDetailID: messageDetailID,
-                senderID,
-                conversationID,
+                messageDetailId: messageDetailId,
+                senderId,
+                conversationId,
                 type,
                 content,
                 attachments,
                 sendStatus: 'sent'
             });
 
-            // Update conversation's last message
-            await Conversation.findByIdAndUpdate(conversationID, {
-                newestMessageID: messageDetailID,
+            await Conversation.findByIdAndUpdate(conversationId, {
+                newestMessageId: messageDetailId,
                 lastMessage: {
                     content,
                     type,
-                    senderID,
+                    senderId,
                     createdAt: message.createdAt
                 },
                 lastChange: message.createdAt
@@ -127,41 +75,45 @@ class MessageDetailController {
 
     async getMessages(req, res) {
         try {
-            const { conversationID } = req.params;
+            const { conversationId } = req.params;
             const { page = 1, limit = 20 } = req.query;
             const userId = req.userId;
 
-            // Check conversation access
-            const conversation = await Conversation.findOne({
-                conversationID,
-                $or: [
-                    { creatorID: userId },
-                    { receiverID: userId },
-                    { groupMembers: userId }
-                ]
+            console.log('Debug:', {
+                conversationId,
+                userId
             });
+
+            const conversation = await Conversation.find({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },      
+                    { receiverId: userId },     
+                    { groupMembers: { $in: [userId] } } 
+                ]
+            })
 
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
-            // Get messages with pagination
-            const messages = await MessageDetail.find({ conversationID })
+            console.log('found:' + conversation);
+
+            const messages = await MessageDetail.find({ conversationId })
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit);
 
-            // Update read status
             await MessageDetail.updateMany(
                 {
-                    conversationID,
-                    senderID: { $ne: userId },
-                    'readBy.userID': { $ne: userId }
+                    conversationId,
+                    senderId: { $ne: userId },
+                    'readBy.userId': { $ne: userId }
                 },
                 {
                     $push: {
                         readBy: {
-                            userID: userId,
+                            userId: userId,
                             readAt: new Date().toISOString()
                         }
                     }

@@ -14,12 +14,12 @@ const authMiddleware = async (req, res, next) => {
 
         console.log('Searching token in DB with:', {
             token: token,
-            userId: decoded.userID
+            userId: decoded.userId
         });
 
         const validToken = await Token.findOne({ 
             token: token,
-            userId: decoded.userID 
+            userId: decoded.userId 
         });
         
         console.log('DB search result:', validToken);
@@ -27,14 +27,14 @@ const authMiddleware = async (req, res, next) => {
         if (!validToken) {
             console.log('Token not found in DB:', {
                 providedToken: token,
-                decodedUserID: decoded.userID
+                decodedUserId: decoded.userId
             });
             throw new Error('Token not found or invalid');
         }
 
-        req.userID = decoded.userID;
+        req.userId = decoded.userId;
         req.token = token;
-        console.log('Authentication successful for user:', req.userID);
+        console.log('Authentication successful for user:', req.userId);
         next();
     } catch (error) {
         console.error('=== Auth Error ===');

@@ -1,0 +1,72 @@
+[{
+  "_id": {
+    "$oid": "67d6e005d07b5cde3a28ba0b"
+  },
+  "conversationId": "conv1",
+  "creatorId": "67d3f8a5e378dd826edb22ca",
+  "receiverId": "67d3f8abe378dd826edb22cb",
+  "isGroup": false,
+  "groupName": null,
+  "groupAvatarUrl": null,
+  "background": null,
+  "newestMessageId": "msg5",
+  "lastMessage": {
+    "content": "See you tomorrow then!",
+    "type": "text",
+    "senderId": "67d3f8abe378dd826edb22cb",
+    "createdAt": "2025-03-16T14:28:21.942Z"
+  },
+  "groupMembers": [],
+  "listImage": [],
+  "listFile": [],
+  "pinnedMessages": [],
+  "muteNotifications": [],
+  "unreadCount": [],
+  "lastChange": {
+    "$date": {
+      "$numberLong": "1742135301942"
+    }
+  },
+  "createdAt": {
+    "$date": {
+      "$numberLong": "1742135301942"
+    }
+  }
+},{
+  "_id": {
+    "$oid": "67d6e006d07b5cde3a28ba0c"
+  },
+  "conversationId": "conv2",
+  "creatorId": "67d3f8a5e378dd826edb22ca",
+  "isGroup": true,
+  "groupName": "Friend Group",
+  "groupAvatarUrl": null,
+  "background": null,
+  "newestMessageId": "msg10",
+  "lastMessage": {
+    "content": "Great idea! Let's do it! 🎉",
+    "type": "text",
+    "senderId": "67d3f8abe378dd826edb22cc",
+    "createdAt": "2025-03-16T14:28:22.271Z"
+  },
+  "groupMembers": [
+    "67d3f8a5e378dd826edb22ca",
+    "67d3f8abe378dd826edb22cb",
+    "67d3f8abe378dd826edb22cc"
+  ],
+  "listImage": [],
+  "listFile": [],
+  "pinnedMessages": [],
+  "muteNotifications": [],
+  "unreadCount": [],
+  "lastChange": {
+    "$date": {
+      "$numberLong": "1742135302271"
+    }
+  },
+  "createdAt": {
+    "$date": {
+      "$numberLong": "1742135302271"
+    }
+  }
+}]

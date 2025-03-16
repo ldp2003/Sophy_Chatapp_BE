@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    conversationID: {
+    conversationId: {
         type: String,
         hashKey: true,
     },
@@ -23,10 +23,10 @@ const schema = new mongoose.Schema({
     lastMessage: {
         type: Object,
         schema: {
-            messageDetailID: String,
+            messageDetailId: String,
             content: String,
             type: String,
-            senderID: String
+            senderId: String
         },
         default: null
     }

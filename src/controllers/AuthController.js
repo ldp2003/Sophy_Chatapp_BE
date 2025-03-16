@@ -28,7 +28,7 @@ class AuthController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            console.log('Found user:', user.username);
+            console.log('Found user:', user.userId);
             
             const isValidPassword = await bcrypt.compare(password, user.password);
             console.log('Password valid:', isValidPassword);
@@ -36,7 +36,7 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid password' });
             }
 
-            const token = jwt.sign({ userID:  user._id}, process.env.JWT_SECRET);
+            const token = jwt.sign({ userId:  user._id}, process.env.JWT_SECRET);
 
             await Token.create({
                 userId: user._id,
@@ -47,12 +47,12 @@ class AuthController {
                 token, 
                 user: {
                     id: user._id,
-                    username: user.username,
+                    userId: user.userId,
                     fullname: user.fullname
                 }
             });
 
-            await User.findOneAndUpdate({ userID: user.userID }, { lastActive: new Date () });
+            await User.findOneAndUpdate({ userId: user.userId }, { lastActive: new Date () });
         } catch (error) {
             console.error('Login error:', error);
             res.status(500).json({ message: error.message });
@@ -63,7 +63,7 @@ class AuthController {
         try {
             const token = req.header('Authorization').replace('Bearer ', '');
             await Token.findOneAndDelete({ token });
-            await User.findOneAndUpdate({ userID: token.userId }, { lastActive: new Date () });  
+            await User.findOneAndUpdate({ userId: token.userId }, { lastActive: new Date () });  
             res.json({ message: 'Logged out successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });

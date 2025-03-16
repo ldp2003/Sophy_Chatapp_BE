@@ -1,0 +1,49 @@
+[{
+  "_id": {
+    "$oid": "67d3f8a5e378dd826edb22ca"
+  },
+  "password": "$2b$10$esqLOMyBCSJRJSFGwqoZL.gx3US59myJsomccdhTF1uB/bZfe7aCC",
+  "fullname": "Test User",
+  "phone": "0123456789",
+  "isMale": true,
+  "urlavatar": "https://example.com/default-avatar.png",
+  "birthday": "1990-01-01",
+  "friendList": [],
+  "lastActive": "Sun Mar 16 2025 22:06:47 GMT+0700 (Giờ Đông Dương)",
+  "deviceTokens": [],
+  "status": "offline",
+  "__v": 1,
+  "blockList": [],
+  "settings": {
+    "block_msg_from_strangers": false
+  },
+  "userId": "user1"
+},{
+  "_id": {
+    "$oid": "67d3f8abe378dd826edb22cb"
+  },
+  "password": "$2b$10$5YgRm9UmJxsxsVVV6YY5O.YX3YeZOfY.P1I4h8aC.3zvXfGqJ0yQi",
+  "fullname": "Friend One",
+  "phone": "0987654321",
+  "isMale": false,
+  "lastActive": {
+    "$date": {
+      "$numberLong": "1741945003842"
+    }
+  },
+  "userId": "user2"
+},{
+  "_id": {
+    "$oid": "67d3f8abe378dd826edb22cc"
+  },
+  "password": "$2b$10$5YgRm9UmJxsxsVVV6YY5O.YX3YeZOfY.P1I4h8aC.3zvXfGqJ0yQi",
+  "fullname": "Friend Two",
+  "phone": "0987654322",
+  "isMale": true,
+  "lastActive": {
+    "$date": {
+      "$numberLong": "1741945003842"
+    }
+  },
+  "userId": "user3"
+}]

@@ -3,17 +3,9 @@ const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-    userID: {
+    userId: {
         type: String,
         hashKey: true,
-    },
-    username: {
-        type: String,
-        required: true,
-        index: {
-            global: true,
-            name: 'username-index'
-        }
     },
     password: {
         type: String,
