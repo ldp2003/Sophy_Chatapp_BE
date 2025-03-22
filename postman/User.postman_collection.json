@@ -204,6 +204,34 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "get-user-by-id",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/api/users/get-user-by-id/user779030103",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"users",
+						"get-user-by-id",
+						"user779030103"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

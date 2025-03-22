@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const userController = new UserController();
 
 router.get('/get-user/:phone', auth, userController.getUserByPhone.bind(userController));
+router.get('/get-user-by-id/:userId', auth, userController.getUserById.bind(userController));
 router.get('/search/:param', auth, userController.searchUsers.bind(userController));
 // router.put('/update-user/name', auth, userController.updateName.bind(userController));
 // router.put('/update-user/avatar', auth, userController.updateAvatar.bind(userController));

@@ -1,6 +1,19 @@
 const User = require('../models/User');
 
 class UserController {
+    async getUserById(req, res) {
+        try {
+            const { userId } = req.params;
+            const user = await User.findOne({userId}).select('-password');
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    } 
+
     async getUserByPhone(req, res) {
         try {
             const { phone } = req.params;
