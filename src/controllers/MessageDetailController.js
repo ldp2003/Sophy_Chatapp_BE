@@ -8,14 +8,19 @@ class MessageDetailController {
     async sendMessage(req, res) {
         try {
             const { conversationId, content, type = 'text', attachments = [] } = req.body;
+            console.log('Received data:', { conversationId, content, type, attachments });
             const senderId = req.userId;
+            console.log('senderId:', senderId);
+            const sender = await User.findById(senderId);
+            console.log('sender:', sender);
+            console.log('sender.userId:', sender.userId);
 
             const conversation = await Conversation.findOne({
                 conversationId,
                 $or: [
-                    { creatorId: senderId },
-                    { receiverId: senderId },
-                    { groupMembers: senderId }
+                    { creatorId: sender.userId },
+                    { receiverId: sender.userId },
+                    { groupMembers: sender.userId }
                 ]
             });
 
@@ -25,18 +30,18 @@ class MessageDetailController {
 
 
             if (!conversation.isGroup) {
-                const receiver = conversation.creatorId === senderId ?
-                    await User.findById(conversation.receiverId) :
-                    await User.findById(conversation.creatorId);
+                const receiver = conversation.creatorId === sender.userId ?
+                    await User.findOne({userId: conversation.receiverId}) :
+                    await User.findOne({userId: conversation.creatorId});
 
-                if (receiver.blockedUsers?.includes(senderId)) {
+                if (receiver.blockedUsers?.includes(sender.userId)) {
                     return res.status(403).json({ message: 'You have been blocked by the recipient' });
                 }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
-                        { senderId: senderId, receiverId: receiver.userId, status: 'accepted' },
-                        { senderId: receiver.userId, receiverId: senderId, status: 'accepted' }
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
                     ]
                 });
 
@@ -45,10 +50,13 @@ class MessageDetailController {
                 }
             }
 
-            const messageDetailId = uuidv4();
+            const lastMessage = await MessageDetail.findOne({}, {}, { sort: { 'messageDetailId': -1 } });
+            const nextMessageNumber = lastMessage ? parseInt(lastMessage.messageDetailId.replace('msg', '')) + 1 : 1;
+            const messageDetailId = `msg${nextMessageNumber}`;
+
             const message = await MessageDetail.create({
                 messageDetailId: messageDetailId,
-                senderId,
+                senderId: sender.userId,
                 conversationId,
                 type,
                 content,
@@ -56,7 +64,7 @@ class MessageDetailController {
                 sendStatus: 'sent'
             });
 
-            await Conversation.findByIdAndUpdate(conversationId, {
+            await Conversation.findOneAndUpdate({conversationId: conversationId}, {
                 newestMessageId: messageDetailId,
                 lastMessage: {
                     content,

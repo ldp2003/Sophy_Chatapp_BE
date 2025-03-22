@@ -7,28 +7,23 @@ require('dotenv').config();
 class AuthController {
     async login(req, res) {
         try {
-            const { username, phone, password } = req.body;
+            const { phone, password } = req.body;
             
-            if (!username && !phone) {
-                return res.status(400).json({ message: 'Username or phone is required' });
+            if (!phone) {
+                return res.status(400).json({ message: 'Phone is required' });
             }
 
             if (!password) {
                 return res.status(400).json({ message: 'Password is required' });
             }
 
-            const user = await User.findOne({
-                $or: [
-                    { username: username },
-                    { phone: phone }
-                ]
-            });
+            const user = await User.findOne({ phone });
             
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            console.log('Found user:', user.userId);
+            console.log('Found user:', user._id);
             
             const isValidPassword = await bcrypt.compare(password, user.password);
             console.log('Password valid:', isValidPassword);
@@ -55,6 +50,46 @@ class AuthController {
             await User.findOneAndUpdate({ userId: user.userId }, { lastActive: new Date () });
         } catch (error) {
             console.error('Login error:', error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async register(req, res) {
+        try {
+            const { phone, password, fullname, isMale, birthday} = req.body;
+            console.log('Received data:', { phone, password, fullname, isMale, birthday});
+            if ( !phone || !password || !fullname || !isMale || !birthday) {
+                return res.status(400).json({ message: 'All fields are required' });
+            }
+
+            const existingUser = await User.findOne({ $or: [{ phone }] });
+            if (existingUser) {
+                return res.status(400).json({ message: 'Phone already used' });
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+            
+            const lastUser = await User.findOne({}, {}, { sort: { 'userId': -1 } });
+            const nextUserNumber = lastUser ? parseInt(lastUser.userId.replace('user', '')) + 1 : 1;
+            const userId = `user${nextUserNumber}`;
+            
+            await User.create({
+                userId,
+                phone,
+                password: hashedPassword,
+                fullname,
+                isMale: true,
+                birthday,
+                settings: {
+                    block_msg_from_strangers: false,
+                },
+                friendList: [],
+                createdAt: new Date(),
+                lastActive: new Date()
+            });
+            
+            return await this.login(req, res);
+        } catch (error) {
             res.status(500).json({ message: error.message });
         }
     }

@@ -1,6 +1,7 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const MessageDetail = require('../models/MessageDetail');
+const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
 class ConversationController {
@@ -33,10 +34,12 @@ class ConversationController {
             const { receiverId } = req.body;
             const senderId = req.userId;
 
+            const sender = await User.findById(senderId);
+
             const existingConv = await Conversation.findOne({
                 $or: [
-                    { creatorId: senderId, receiverId: receiverId },
-                    { creatorId: receiverId, receiverId: senderId }
+                    { creatorId: sender.userId, receiverId: receiverId },
+                    { creatorId: receiverId, receiverId: sender.userId }
                 ]
             });
 
@@ -44,9 +47,13 @@ class ConversationController {
                 return res.json(existingConv);
             }
 
+            const lastConversation = await Conversation.findOne({}, {}, { sort: { 'conversationId': -1 } });
+            const nextConversationNumber = lastConversation ? parseInt(lastConversation.conversationId.replace('conv', '')) + 1 : 1;
+            const conversationId = `conv${nextConversationNumber}`;
+            
             const conversation = await Conversation.create({
-                conversationId: uuidv4(),
-                creatorId: senderId,
+                conversationId: conversationId,
+                creatorId: sender.userId,
                 receiverId: receiverId,
                 isGroup: false,
                 lastChange: new Date(),

@@ -4,7 +4,7 @@ class UserController {
     async getUserByPhone(req, res) {
         try {
             const { phone } = req.params;
-            const user = await User.findOne({ phone });
+            const user = await User.findOne({ phone }).select('-password');
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
@@ -23,13 +23,13 @@ class UserController {
             }
             
             if (/^\d+$/.test(searchParam)) {
-                const users = await User.find({ phone: searchParam }).select('-password');
+                const users = await User.find({ phone: searchParam }).select('-password -deviceTokens -createdAt -blockList -settings');
                 return res.json(users);
             }
 
             const users = await User.find({
                 fullname: { $regex: searchParam, $options: 'i' } 
-            }).select('-password');
+            }).select('-password -deviceTokens -createdAt -blockList -settings');
 
             res.json(users);
         } catch (error) {

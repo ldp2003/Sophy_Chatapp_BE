@@ -1,0 +1,26 @@
+{
+	"info": {
+		"_postman_id": "10a3db60-918e-4275-895f-ec3bd1b4781a",
+		"name": "Messages",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43105452"
+	},
+	"item": [
+		{
+			"name": "get-messages/conversationId",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "send",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}

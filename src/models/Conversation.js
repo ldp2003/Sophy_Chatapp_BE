@@ -39,7 +39,24 @@ const schema = new mongoose.Schema({
         },
         default: null
     },
-    isBlock: Boolean,
+    blockedBy: {
+        type: Array,
+        schema: [String],  
+        default: []
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    deletedAt: {
+        type: String,
+        default: null
+    },
+    formerMembers: {
+        type: Array,
+        default: [],
+        schema: [String],
+    },
     rules: {
         type: Object,
         schema: {
