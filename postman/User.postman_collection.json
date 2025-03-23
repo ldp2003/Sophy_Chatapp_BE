@@ -39,7 +39,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"username\": \"user123\",\r\n    \"password\": \"12345678\"\r\n}",
+					"raw": "{\r\n    \"phone\": \"0123456776\",\r\n    \"password\": \"12345678\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -104,9 +104,15 @@
 			"name": "get-user/params",
 			"request": {
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
 				"url": {
-					"raw": "http://localhost:3000/api/users/get-user/0123456789",
+					"raw": "http://localhost:3000/api/users/get-user/0123456777",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -116,7 +122,7 @@
 						"api",
 						"users",
 						"get-user",
-						"0123456789"
+						"0123456777"
 					]
 				}
 			},
@@ -182,7 +188,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"phone\": \"0123456775\",\r\n    \"password\": \"12345678\",\r\n    \"fullname\": \"gi gi do\",\r\n    \"isMale\": true,\r\n    \"birthday\": \"2003-01-03\"\r\n}",
+					"raw": "{\r\n    \"phone\": \"0123456779\",\r\n    \"password\": \"12345678\",\r\n    \"fullname\": \"gi gi do\",\r\n    \"isMale\": true,\r\n    \"birthday\": \"2003-01-03\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
