@@ -2,6 +2,9 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const Token = require('../models/Token');
+const cache = require('../utils/cache');
+const uuid = require('uuid');
+
 require('dotenv').config();
 
 class AuthController {
@@ -31,15 +34,15 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid password' });
             }
 
-            const token = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET);
-
-            await Token.create({
-                userId: user.userId,
-                token: token
-            });
+            const jit=uuid.v4();
+            const accessToken = jwt.sign({ userId: user.userId,jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const refreshToken = jwt.sign({ userId: user.userId,jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
 
             res.json({
-                token,
+                token: {
+                    accessToken,
+                    refreshToken
+                },
                 user: {
                     userId: user.userId,
                     fullname: user.fullname
@@ -101,10 +104,50 @@ class AuthController {
     async logout(req, res) {
         try {
             const token = req.header('Authorization').replace('Bearer ', '');
-            await Token.findOneAndDelete({ token });
+            const blacklistKey = `blacklist_${req.decoded.userId}_${req.decoded.jit}`;
+            cache.set(blacklistKey, {
+                userId: req.decoded.userId
+            }, 24 * 60 * 60); 
             await User.findOneAndUpdate({ userId: token.userId }, { lastActive: new Date() });
             res.json({ message: 'Logged out successfully' });
         } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+    async refreshToken(req, res) {
+        try {
+            const token = req.header('Authorization').replace('Bearer ', '');
+            const blacklistKey = `blacklist_${req.decoded.userId}_${req.decoded.jit}`;
+            cache.set(blacklistKey, {
+                userId: req.decoded.userId
+            }, 24 * 60 * 60); 
+            await User.findOneAndUpdate({ userId: token.userId }, { lastActive: new Date() });
+            await this.login(req, res);
+        } 
+        catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async changePassword(req, res) {
+        try {
+            const { userId, oldPassword, newPassword } = req.body;
+            const user = await User.findOne({ userId }); 
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+            if (!isPasswordValid) {
+                return res.status(401).json({ message: 'Invalid password' });
+            }
+
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await User.findOneAndUpdate({ userId }, { password: hashedPassword });
+
+            await this.refreshToken(req, res);
+        } 
+        catch (error) {
             res.status(500).json({ message: error.message });
         }
     }

@@ -18,7 +18,8 @@
 							"    var jsonData = pm.response.json();\r",
 							"    console.log(\"Token received:\", jsonData.token); // Add this line to debug\r",
 							"    if (jsonData.token) {\r",
-							"        pm.environment.set(\"authToken\", jsonData.token);\r",
+							"        pm.environment.set(\"accessToken\", jsonData.token.accessToken);\r",
+							"        pm.environment.set(\"refreshToken\", jsonData.token.refreshToken);\r",
 							"        console.log(\"Token saved to environment\"); // Add this line to debug\r",
 							"    }\r",
 							"});"
@@ -39,7 +40,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"phone\": \"0123456779\",\r\n    \"password\": \"12345678\"\r\n}",
+					"raw": "{\r\n    \"phone\": \"0123456760\",\r\n    \"password\": \"12345678\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -104,13 +105,7 @@
 			"name": "get-user-by-phone",
 			"request": {
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "Bearer {{authToken}}",
-						"type": "text"
-					}
-				],
+				"header": [],
 				"url": {
 					"raw": "http://localhost:3000/api/users/get-user/0123456779",
 					"protocol": "http",
@@ -162,12 +157,13 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Register successful\", function () {\r",
+							"pm.test(\"Login successful\", function () {\r",
 							"    pm.response.to.have.status(200);\r",
 							"    var jsonData = pm.response.json();\r",
 							"    console.log(\"Token received:\", jsonData.token); // Add this line to debug\r",
 							"    if (jsonData.token) {\r",
-							"        pm.environment.set(\"authToken\", jsonData.token);\r",
+							"        pm.environment.set(\"accessToken\", jsonData.token.accessToken);\r",
+							"        pm.environment.set(\"refreshToken\", jsonData.token.refreshToken);\r",
 							"        console.log(\"Token saved to environment\"); // Add this line to debug\r",
 							"    }\r",
 							"});"
@@ -188,7 +184,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"phone\": \"0123456779\",\r\n    \"password\": \"12345678\",\r\n    \"fullname\": \"gi gi do\",\r\n    \"isMale\": true,\r\n    \"birthday\": \"2003-01-03\"\r\n}",
+					"raw": "{\r\n    \"phone\": \"0123456765\",\r\n    \"password\": \"12345678\",\r\n    \"fullname\": \"gi gi 765\",\r\n    \"isMale\": true,\r\n    \"birthday\": \"2003-01-03\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -212,6 +208,73 @@
 			"response": []
 		},
 		{
+			"name": "refreshToken",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Login successful\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    var jsonData = pm.response.json();\r",
+							"    console.log(\"Token received:\", jsonData.token); // Add this line to debug\r",
+							"    if (jsonData.token) {\r",
+							"        pm.environment.set(\"accessToken\", jsonData.token.accessToken);\r",
+							"        pm.environment.set(\"refreshToken\", jsonData.token.refreshToken);\r",
+							"        console.log(\"Token saved to environment\"); // Add this line to debug\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{refreshToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"phone\": \"0123456779\",\r\n    \"password\": \"12345678\",\r\n    \"fullname\": \"gi gi do\",\r\n    \"isMale\": true,\r\n    \"birthday\": \"2003-01-03\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/auth/refresh",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"auth",
+						"refresh"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "get-user-by-id",
 			"request": {
 				"method": "GET",
@@ -219,7 +282,8 @@
 					{
 						"key": "Authorization",
 						"value": "Bearer {{authToken}}",
-						"type": "text"
+						"type": "text",
+						"disabled": true
 					}
 				],
 				"url": {
@@ -238,6 +302,38 @@
 				}
 			},
 			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
 		}
 	]
 }
