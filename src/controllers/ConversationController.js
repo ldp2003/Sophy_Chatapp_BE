@@ -77,8 +77,20 @@ class ConversationController {
             const { groupName, groupMembers } = req.body;
             const creatorId = req.userId;
 
+            const creator = await User.findOne({userId: creatorId});
+
+            const last3Digits = creator.phone.slice(-3);
+            const now = new Date();
+            const dateStr = now.getFullYear().toString().slice(-2) +
+                          String(now.getMonth() + 1).padStart(2, '0') +
+                          String(now.getDate()).padStart(2, '0') +
+                          String(now.getHours()).padStart(2, '0') +
+                          String(now.getMinutes()).padStart(2, '0') +
+                          String(now.getSeconds()).padStart(2, '0');
+            const conversationId = `conv${last3Digits}${dateStr}`;
+
             const conversation = await Conversation.create({
-                conversationId: uuidv4(),
+                conversationId: conversationId,
                 creatorId: creatorId,
                 groupName,
                 groupMembers,

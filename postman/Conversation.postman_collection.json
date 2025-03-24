@@ -72,6 +72,48 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "create-group-conversation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"groupName\": \"Nhóm 11 nè trời ơi\",\r\n  \"groupMembers\": [\"user779030103\", \"user771030103\", \"user7730301031\"]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/conversations/group/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"conversations",
+						"group",
+						"create"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
