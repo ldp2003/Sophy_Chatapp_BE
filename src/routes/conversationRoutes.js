@@ -12,7 +12,7 @@ router.post('/create', auth, conversationController.createConversation.bind(conv
 router.post('/group/create', auth, conversationController.createGroupConversation.bind(conversationController));
 // router.put('/group/:conversationId/add/:userId', auth, conversationController.addUserToGroup.bind(conversationController));
 // router.put('/group/:conversationId/remove/:userId', auth, conversationController.removeUserFromGroup.bind(conversationController));
-// router.delete('/group/:conversationId', auth, conversationController.deleteGroup.bind(conversationController));
+// router.put('/group/delete/:conversationId', auth, conversationController.deleteGroup.bind(conversationController));
 // router.put('/group/:conversationId/leave', auth, conversationController.leaveConversation.bind(conversationController));
 
 module.exports = router;
