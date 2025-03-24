@@ -23,7 +23,7 @@ class AuthController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            console.log('Found user:', user._id);
+            console.log('Found user:', user.userId);
 
             const isValidPassword = await bcrypt.compare(password, user.password);
             console.log('Password valid:', isValidPassword);
@@ -31,17 +31,16 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid password' });
             }
 
-            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+            const token = jwt.sign({ userId: user.userId }, process.env.JWT_SECRET);
 
             await Token.create({
-                userId: user._id,
+                userId: user.userId,
                 token: token
             });
 
             res.json({
                 token,
                 user: {
-                    id: user._id,
                     userId: user.userId,
                     fullname: user.fullname
                 }
@@ -68,11 +67,11 @@ class AuthController {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-
+            
             const last3Digits = phone.slice(-3);
             const birthdayParts = birthday.split('-');
             const formattedBirthday = birthdayParts.length === 3 ?
-                `${birthdayParts[2]}${birthdayParts[1]}${birthdayParts[0].slice(-2)}` :
+                `${birthdayParts[0].slice(-2)}${birthdayParts[1]}${birthdayParts[2]}` :
                 'unknown';
             const userPattern = `user${last3Digits}${formattedBirthday}`;
 

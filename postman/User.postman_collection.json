@@ -39,7 +39,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"phone\": \"0123456776\",\r\n    \"password\": \"12345678\"\r\n}",
+					"raw": "{\r\n    \"phone\": \"0123456779\",\r\n    \"password\": \"12345678\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -101,7 +101,7 @@
 			"response": []
 		},
 		{
-			"name": "get-user/params",
+			"name": "get-user-by-phone",
 			"request": {
 				"method": "GET",
 				"header": [
@@ -112,7 +112,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/api/users/get-user/0123456777",
+					"raw": "http://localhost:3000/api/users/get-user/0123456779",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -122,7 +122,7 @@
 						"api",
 						"users",
 						"get-user",
-						"0123456777"
+						"0123456779"
 					]
 				}
 			},

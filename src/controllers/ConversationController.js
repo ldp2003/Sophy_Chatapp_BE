@@ -34,7 +34,7 @@ class ConversationController {
             const { receiverId } = req.body;
             const senderId = req.userId;
 
-            const sender = await User.findById(senderId);
+            const sender = await User.findOne({userId: senderId});
 
             const existingConv = await Conversation.findOne({
                 $or: [
@@ -47,9 +47,15 @@ class ConversationController {
                 return res.json(existingConv);
             }
 
-            const lastConversation = await Conversation.findOne({}, {}, { sort: { 'conversationId': -1 } });
-            const nextConversationNumber = lastConversation ? parseInt(lastConversation.conversationId.replace('conv', '')) + 1 : 1;
-            const conversationId = `conv${nextConversationNumber}`;
+            const last3Digits = sender.phone.slice(-3);
+            const now = new Date();
+            const dateStr = now.getFullYear().toString().slice(-2) +
+                          String(now.getMonth() + 1).padStart(2, '0') +
+                          String(now.getDate()).padStart(2, '0') +
+                          String(now.getHours()).padStart(2, '0') +
+                          String(now.getMinutes()).padStart(2, '0') +
+                          String(now.getSeconds()).padStart(2, '0');
+            const conversationId = `conv${last3Digits}${dateStr}`;
             
             const conversation = await Conversation.create({
                 conversationId: conversationId,

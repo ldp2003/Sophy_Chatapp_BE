@@ -11,7 +11,7 @@ class MessageDetailController {
             console.log('Received data:', { conversationId, content, type, attachments });
             const senderId = req.userId;
             console.log('senderId:', senderId);
-            const sender = await User.findById(senderId);
+            const sender = await User.findOne({ userId: senderId });
             console.log('sender:', sender);
             console.log('sender.userId:', sender.userId);
 
@@ -31,8 +31,8 @@ class MessageDetailController {
 
             if (!conversation.isGroup) {
                 const receiver = conversation.creatorId === sender.userId ?
-                    await User.findOne({userId: conversation.receiverId}) :
-                    await User.findOne({userId: conversation.creatorId});
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
 
                 if (receiver.blockedUsers?.includes(sender.userId)) {
                     return res.status(403).json({ message: 'You have been blocked by the recipient' });
@@ -50,9 +50,15 @@ class MessageDetailController {
                 }
             }
 
-            const lastMessage = await MessageDetail.findOne({}, {}, { sort: { 'messageDetailId': -1 } });
-            const nextMessageNumber = lastMessage ? parseInt(lastMessage.messageDetailId.replace('msg', '')) + 1 : 1;
-            const messageDetailId = `msg${nextMessageNumber}`;
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
 
             const message = await MessageDetail.create({
                 messageDetailId: messageDetailId,
@@ -61,15 +67,16 @@ class MessageDetailController {
                 type,
                 content,
                 attachments,
+                createdAt: new Date(),
                 sendStatus: 'sent'
             });
 
-            await Conversation.findOneAndUpdate({conversationId: conversationId}, {
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
                 newestMessageId: messageDetailId,
                 lastMessage: {
                     content,
                     type,
-                    senderId,
+                    senderId: sender.userId,
                     createdAt: message.createdAt
                 },
                 lastChange: message.createdAt
@@ -95,9 +102,9 @@ class MessageDetailController {
             const conversation = await Conversation.find({
                 conversationId: conversationId,
                 $or: [
-                    { creatorId: userId },      
-                    { receiverId: userId },     
-                    { groupMembers: { $in: [userId] } } 
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
                 ]
             })
 
