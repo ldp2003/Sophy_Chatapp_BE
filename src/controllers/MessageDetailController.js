@@ -3,6 +3,7 @@ const Conversation = require('../models/Conversation');
 const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
+const { getSocketController } = require('../socket');
 
 class MessageDetailController {
     async sendMessage(req, res) {
@@ -81,7 +82,13 @@ class MessageDetailController {
                 },
                 lastChange: message.createdAt
             });
-
+            
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, message, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.avatar || null
+            });
             res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });

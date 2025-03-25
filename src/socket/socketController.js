@@ -38,10 +38,11 @@ class SocketController {
             });
 
             socket.on('sendMessage', (data) => {
-                const { conversationId, message } = data;
+                const { conversationId, message, sender } = data;
                 this.io.to(conversationId).emit('newMessage', {
                     conversationId,
-                    message
+                    message,
+                    sender
                 });
             });
 
@@ -56,9 +57,16 @@ class SocketController {
         });
     }
 
-    // Helper methods for controllers to use
-    emitNewMessage(conversationId, message) {
-        this.io.to(conversationId).emit('newMessage', { conversationId, message });
+    emitNewMessage(conversationId, message, sender) {
+        this.io.to(conversationId).emit('newMessage', { 
+            conversationId, 
+            message,
+            sender: {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.avatar || null
+            }
+        });
     }
 
     emitUserTyping(conversationId, userId) {

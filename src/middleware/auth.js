@@ -28,7 +28,7 @@ const authMiddleware = async (req, res, next) => {
 
         req.userId = decoded.userId;
         const jitKey = `blacklist_${req.decoded.userId}_${req.decoded.jit}`;
-        getJit=await cache.get(jitKey);
+        getJit = await cache.get(jitKey);
         if (getJit) {
             throw new Error('Token expired');
         }

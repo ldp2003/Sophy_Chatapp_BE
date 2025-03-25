@@ -3,29 +3,19 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const http = require('http');
-const socketIo = require('socket.io');
+const { initializeSocket } = require('./socket');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
 // Socket.io connection
-io.on('connection', (socket) => {
-    console.log('New client connected');
-
-    socket.on('sendMessage', (message) => {
-        io.emit('receiveMessage', message);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
-});
+const io = initializeSocket(server);
+app.set('io', io);
 
 // Import routes
 const setRoutes = require('./routes/index');

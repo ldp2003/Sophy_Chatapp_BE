@@ -34,9 +34,9 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid password' });
             }
 
-            const jit=uuid.v4();
-            const accessToken = jwt.sign({ userId: user.userId,jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
-            const refreshToken = jwt.sign({ userId: user.userId,jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
+            const jit = uuid.v4();
+            const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
 
             res.json({
                 token: {
@@ -108,7 +108,7 @@ class AuthController {
             cache.set(blacklistKey, {
                 userId: req.decoded.userId
             }, 24 * 60 * 60); 
-            await User.findOneAndUpdate({ userId: token.userId }, { lastActive: new Date() });
+            await User.findOneAndUpdate({ userId: req.userId }, { lastActive: new Date() });
             res.json({ message: 'Logged out successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -121,8 +121,24 @@ class AuthController {
             cache.set(blacklistKey, {
                 userId: req.decoded.userId
             }, 24 * 60 * 60); 
-            await User.findOneAndUpdate({ userId: token.userId }, { lastActive: new Date() });
-            await this.login(req, res);
+
+            const user = await User.findOne({ userId: req.userId });
+            const jit = uuid.v4();
+            const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
+
+            res.json({
+                token: {
+                    accessToken,
+                    refreshToken
+                },
+                user: {
+                    userId: user.userId,
+                    fullname: user.fullname
+                }
+            });
+
+            await User.findOneAndUpdate({ userId: user.userId }, { lastActive: new Date() });
         } 
         catch (error) {
             res.status(500).json({ message: error.message }); 
@@ -131,8 +147,9 @@ class AuthController {
 
     async changePassword(req, res) {
         try {
-            const { userId, oldPassword, newPassword } = req.body;
-            const user = await User.findOne({ userId }); 
+            const { phone, oldPassword, newPassword } = req.body;
+            const userId = req.userId;
+            const user = await User.findOne({ userId: userId }); 
             if (!user) {
                 return res.status(404).json({ message: 'User not found' }); 
             }
@@ -141,9 +158,9 @@ class AuthController {
             if (!isPasswordValid) {
                 return res.status(401).json({ message: 'Invalid password' });
             }
-
+            
             const hashedPassword = await bcrypt.hash(newPassword, 10);
-            await User.findOneAndUpdate({ userId }, { password: hashedPassword });
+            await User.findOneAndUpdate({ userId: userId }, { password: hashedPassword, lastActive: new Date() });
 
             await this.refreshToken(req, res);
         } 
