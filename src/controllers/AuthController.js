@@ -147,7 +147,7 @@ class AuthController {
 
     async changePassword(req, res) {
         try {
-            const { phone, oldPassword, newPassword } = req.body;
+            const {oldPassword, newPassword } = req.body;
             const userId = req.userId;
             const user = await User.findOne({ userId: userId }); 
             if (!user) {
