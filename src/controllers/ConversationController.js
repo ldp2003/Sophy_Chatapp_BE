@@ -104,6 +104,53 @@ class ConversationController {
             res.status(500).json({ message: error.message });
         }
     }
+
+    async getGroups(req, res) {
+        try {
+            const userId = req.userId;
+
+            const groups = await Conversation.find({
+                $or: [
+                    { groupMembers: { $in: [userId] } },
+                    { formerMembers: { $in: [userId] } }
+                ],
+                isGroup: true
+            });
+
+            res.json(groups);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async getConversationById(req, res) {
+        try {
+            const conversationId = req.params.conversationId;
+            const userId = req.userId;
+            
+            const conversation = await Conversation.findOne({ conversationId });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+
+            if (conversation.isGroup) {
+                if (!conversation.groupMembers.includes(userId)) {
+                    return res.status(403).json({ message: 'You are not a member of this group' });
+                }  
+            }
+
+            if (!conversation.isGroup) {
+                if (conversation.creatorId !== userId && conversation.receiverId !== userId) {
+                    return res.status(403).json({ message: 'You are not a participant in this conversation' });
+                }
+            }
+
+            res.json(conversation);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
 }
 
 module.exports = ConversationController;

@@ -36,18 +36,65 @@ class UserController {
             }
             
             if (/^\d+$/.test(searchParam)) {
-                const users = await User.find({ phone: searchParam }).select('-password -deviceTokens -createdAt -blockList -settings');
+                const users = await User.find({ phone: searchParam }).select('-password -deviceTokens -createdAt -blockList');
                 return res.json(users);
             }
 
             const users = await User.find({
                 fullname: { $regex: searchParam, $options: 'i' } 
-            }).select('-password -deviceTokens -createdAt -blockList -settings');
+            }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(users);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
+    }
+
+    async getProfileById(req, res) {
+        try {
+            const {userId} = req.params;
+            const user = await User.findOne({userId: userId}).select('-password -deviceTokens -createdAt -blockList')
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            res.json(user); 
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async getFriends(req, res) {
+        try {
+            const userId = req.userId;
+            const user = await User.findOne({userId}).select('-password');
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            const friends = await User.find({ userId: { $in: user.listFriend } }).select('-password -deviceTokens -createdAt -blockList');
+
+            res.json(friends);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async getBlockedUsers(req, res) {
+        try {
+            const userId = req.userId;
+            const user = await User.findOne({userId}).select('-password')
+            
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            const blockedUsers = await User.find({ userId: { $in: user.blockList } }).select('-password -deviceTokens -createdAt -blockList');
+
+            res.json(blockedUsers);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        } 
     }
 }
 

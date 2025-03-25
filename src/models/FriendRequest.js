@@ -12,10 +12,12 @@ const schema = new mongoose.Schema({
   },
   senderId: {
     type: "string",
+    ref: "User",
     index: true,
   },
   receiverId: {
     type: "string",
+    ref: "User",
     index: true,
   },
   message: {

@@ -21,6 +21,10 @@ const schema = new mongoose.Schema({
             type: Boolean,
             default: false
         },
+        hidden_profile_from_strangers: {
+            type: Boolean,
+            default: false
+        },
     },
     friendList: {
         type: Array,

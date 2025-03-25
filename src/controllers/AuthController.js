@@ -123,6 +123,9 @@ class AuthController {
             }, 24 * 60 * 60); 
 
             const user = await User.findOne({ userId: req.userId });
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
             const jit = uuid.v4();
             const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
             const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
