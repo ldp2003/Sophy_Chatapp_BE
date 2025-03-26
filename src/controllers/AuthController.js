@@ -60,7 +60,7 @@ class AuthController {
         try {
             const { phone, password, fullname, isMale, birthday } = req.body;
             console.log('Received data:', { phone, password, fullname, isMale, birthday });
-            if (!phone || !password || !fullname || !isMale || !birthday) {
+            if (!phone || !password || !fullname || isMale === undefined || !birthday) {
                 return res.status(400).json({ message: 'All fields are required' });
             }
 
@@ -85,7 +85,7 @@ class AuthController {
                 phone,
                 password: hashedPassword,
                 fullname,
-                isMale: true,
+                isMale: isMale,
                 birthday,
                 settings: {
                     block_msg_from_strangers: false,
