@@ -1,6 +1,19 @@
 const User = require('../models/User');
 
 class UserController {
+    async checkUsedPhone(req, res) {
+        try {
+            const { phone } = req.params;
+            const user = await User.findOne({ phone });
+            if (user) {
+                return res.status(400).json({ message: 'Phone number is already used' });
+            }
+            res.json({ message: 'Phone number is available' }); 
+        } 
+        catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
     async getUserById(req, res) {
         try {
             const { userId } = req.params;

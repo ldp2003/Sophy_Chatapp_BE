@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const userController = new UserController();
 const friendRequestController = new FriendRequestController();
 
+router.get('/check-used-phone/:phone', userController.checkUsedPhone.bind(userController));
 router.get('/get-user/:phone', auth, userController.getUserByPhone.bind(userController));
 router.get('/get-user-by-id/:userId', auth, userController.getUserById.bind(userController));
 router.get('/search/:param', auth, userController.searchUsers.bind(userController));
