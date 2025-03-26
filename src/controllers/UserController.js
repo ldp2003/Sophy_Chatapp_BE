@@ -109,6 +109,84 @@ class UserController {
             res.status(500).json({ message: error.message }); 
         } 
     }
+
+    async updateName(req, res) {
+        try {
+            const userId = req.userId;
+            const { fullname } = req.body;
+            const user = await User.findOneAndUpdate({ userId }, { fullname }, { new: true }).select('-password'); 
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        } 
+    }
+
+    async updateAvatar(req, res) {
+        try {
+            const userId = req.userId;
+            const { urlavatar } = req.body;
+            const user = await User.findOneAndUpdate({ userId }, { urlavatar }, { new: true }).select('-password'); 
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async updateInfo(req, res) {
+        try {
+            const userId = req.userId;
+            const { fullname, gender, birthday } = req.body;
+            const user = await User.findOneAndUpdate({ userId }, { fullname, gender, birthday}, { new: true }).select('-password'); 
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            res.json(user);
+        } 
+        catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async blockUser(req, res) {
+        try {
+            const userId = req.userId;
+            const { blockedUserId } = req.body;
+            const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockedUserId } }, { new: true }).select('-password'); 
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async unblockUser(req, res) {
+        try {
+            const userId = req.userId;
+            const { blockedUserId } = req.body;
+            const user = await User.findOneAndUpdate({ userId }, { $pull: { blockList: blockedUserId } }, { new: true }).select('-password'); 
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+
 }
 
 module.exports = UserController;

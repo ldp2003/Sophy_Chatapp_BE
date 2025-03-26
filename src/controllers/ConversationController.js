@@ -12,13 +12,13 @@ class ConversationController {
 
             const conversations = await Conversation.find({
                 $or: [
-                    { creatorId: userId },      
-                    { receiverId: userId },    
+                    { creatorId: userId },
+                    { receiverId: userId },
                     { groupMembers: { $in: [userId] } }
                 ]
             })
-            .sort({ lastChange: -1 })
-            .populate('lastMessage');
+                .sort({ lastChange: -1 })
+                .populate('lastMessage');
 
             console.log('Found conversations:', JSON.stringify(conversations, null, 2));
 
@@ -34,7 +34,7 @@ class ConversationController {
             const { receiverId } = req.body;
             const senderId = req.userId;
 
-            const sender = await User.findOne({userId: senderId});
+            const sender = await User.findOne({ userId: senderId });
 
             const existingConv = await Conversation.findOne({
                 $or: [
@@ -50,13 +50,13 @@ class ConversationController {
             const last3Digits = sender.phone.slice(-3);
             const now = new Date();
             const dateStr = now.getFullYear().toString().slice(-2) +
-                          String(now.getMonth() + 1).padStart(2, '0') +
-                          String(now.getDate()).padStart(2, '0') +
-                          String(now.getHours()).padStart(2, '0') +
-                          String(now.getMinutes()).padStart(2, '0') +
-                          String(now.getSeconds()).padStart(2, '0');
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0');
             const conversationId = `conv${last3Digits}${dateStr}`;
-            
+
             const conversation = await Conversation.create({
                 conversationId: conversationId,
                 creatorId: sender.userId,
@@ -77,16 +77,16 @@ class ConversationController {
             const { groupName, groupMembers } = req.body;
             const creatorId = req.userId;
 
-            const creator = await User.findOne({userId: creatorId});
+            const creator = await User.findOne({ userId: creatorId });
 
             const last3Digits = creator.phone.slice(-3);
             const now = new Date();
             const dateStr = now.getFullYear().toString().slice(-2) +
-                          String(now.getMonth() + 1).padStart(2, '0') +
-                          String(now.getDate()).padStart(2, '0') +
-                          String(now.getHours()).padStart(2, '0') +
-                          String(now.getMinutes()).padStart(2, '0') +
-                          String(now.getSeconds()).padStart(2, '0');
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0');
             const conversationId = `conv${last3Digits}${dateStr}`;
 
             const conversation = await Conversation.create({
@@ -95,6 +95,10 @@ class ConversationController {
                 groupName,
                 groupMembers,
                 isGroup: true,
+                rules: {
+                    ownerId: creatorId,
+                    coOwnerIds: [],
+                },
                 lastChange: new Date(),
                 createdAt: new Date()
             });
@@ -127,7 +131,7 @@ class ConversationController {
         try {
             const conversationId = req.params.conversationId;
             const userId = req.userId;
-            
+
             const conversation = await Conversation.findOne({ conversationId });
 
             if (!conversation) {
@@ -137,7 +141,7 @@ class ConversationController {
             if (conversation.isGroup) {
                 if (!conversation.groupMembers.includes(userId)) {
                     return res.status(403).json({ message: 'You are not a member of this group' });
-                }  
+                }
             }
 
             if (!conversation.isGroup) {
@@ -148,7 +152,378 @@ class ConversationController {
 
             res.json(conversation);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async addUserToGroup(req, res) {
+        try {
+            const { conversationId, userId } = req.body;
+            const currentUserId = req.userId
+            const user = await User.findOne({ userId: userId })
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId })
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (conversation.groupMembers.includes(userId)) {
+                return res.status(400).json({ message: 'User is already a member of this group' });
+            }
+
+            conversation.groupMembers.push(userId);
+            await conversation.save();
+
+            res.json(conversation);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async removeUserFromGroup(req, res) {
+        try {
+            const { conversationId, userId } = req.body;
+            const currentUserId = req.userId;
+            const user = await User.findOne({ userId: userId })
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId })
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.groupMembers.includes(userId)) {
+                return res.status(400).json({ message: 'User is not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+
+            const isOwner = conversation.rules.ownerId === currentUserId;
+            const isCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId);
+            const targetIsOwner = conversation.rules.ownerId === userId;
+            const targetIsCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId);
+
+            if (isOwner) {
+                conversation.groupMembers = conversation.groupMembers.filter(memberId => memberId !== userId);
+
+                if (targetIsCoOwner) {
+                    conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
+                }
+
+                if (!conversation.formerMembers) {
+                    conversation.formerMembers = [];
+                }
+                if (!conversation.formerMembers.includes(userId)) {
+                    conversation.formerMembers.push(userId);
+                }
+
+                await conversation.save();
+                return res.json({ message: 'User removed from group successfully' });
+            }
+
+            if (isCoOwner) {
+                if (targetIsOwner) {
+                    return res.status(403).json({ message: 'Co-owners cannot remove the owner' });
+                }
+
+                if (targetIsCoOwner) {
+                    return res.status(403).json({ message: 'Co-owners cannot remove other co-owners' });
+                }
+                conversation.groupMembers = conversation.groupMembers.filter(memberId => memberId !== userId);
+
+                if (!conversation.formerMembers) {
+                    conversation.formerMembers = [];
+                }
+                if (!conversation.formerMembers.includes(userId)) {
+                    conversation.formerMembers.push(userId);
+                }
+
+                await conversation.save();
+                return res.json({ message: 'User removed from group successfully' });
+            }
+
+            return res.status(403).json({ message: 'You do not have permission to remove users from this group' });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async setCoOwner(req, res) {
+        try {
+            const { conversationId, coOwnerIds } = req.body;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+
+            const isOwner = conversation.rules.ownerId === currentUserId;
+
+            if (!isOwner) {
+                return res.status(403).json({ message: 'Only the owner can set co-owners' });
+            }
+
+            for (const userId of coOwnerIds) {
+                if (!conversation.groupMembers.includes(userId)) {
+                    return res.status(400).json({ message: `User ${userId} is not a member of this group` });
+                }
+
+                if (conversation.rules.ownerId === userId) {
+                    return res.status(400).json({ message: 'Cannot set owner as co-owner' });
+                }
+            }
+
+            if (!conversation.rules.coOwnerIds) {
+                conversation.rules.coOwnerIds = [];
+            }
+
+            for (const userId of coOwnerIds) {
+                if (!conversation.rules.coOwnerIds.includes(userId)) {
+                    conversation.rules.coOwnerIds.push(userId);
+                }
+            }
+
+            await conversation.save();
+
+            res.json({
+                message: 'Co-owners updated successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async removeCoOwner(req, res) {
+        try {
+            const { conversationId, userId } = req.body;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+            const targetUser = await User.findOne({ userId: userId });
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!targetUser) {
+                return res.status(404).json({ message: 'TargetUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+            const isOwner = conversation.rules.ownerId === currentUserId;
+            const targetIsCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId);
+
+            if (!isOwner) {
+                return res.status(403).json({ message: 'Only the owner can remove co-owners' });
+            }
+            if (!targetIsCoOwner) {
+                return res.status(400).json({ message: 'User is not a co-owner' });
+            }
+
+            conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
+            await conversation.save();
+
+            res.json({
+                message: 'Co-owner removed successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async setOwner(req, res) {
+        try {
+            const { conversationId, userId } = req.body;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+            const targetUser = await User.findOne({ userId: userId });
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!targetUser) {
+                return res.status(404).json({ message: 'TargetUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+            const isOwner = conversation.rules.ownerId === currentUserId;
+
+            if (!isOwner) {
+                return res.status(403).json({ message: 'Only the owner can set a new owner' });
+            }
+
+            if (!conversation.groupMembers.includes(userId)) {
+                return res.status(400).json({ message: 'User is not a member of this group' });
+            }
+
+            conversation.rules.ownerId = userId;
+            await conversation.save();
+
+            res.json({
+                message: 'Owner updated successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async deleteGroup(req, res) {
+        try {
+            const { conversationId } = req.body;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+            const isOwner = conversation.rules.ownerId === currentUserId;
+
+            if (!isOwner) {
+                return res.status(403).json({ message: 'Only the owner can delete the group' });
+            }
+
+            conversation.isDeleted = true;
+
+            if (!conversation.formerMembers) {
+                conversation.formerMembers = [];
+            }
+
+            for (const memberId of conversation.groupMembers) {
+                if (!conversation.formerMembers.includes(memberId)) {
+                    conversation.formerMembers.push(memberId);
+                }
+            }
+
+            conversation.groupMembers = [];
+
+            await conversation.save();
+
+            res.json({
+                message: 'Group deleted successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async leaveGroup(req, res) {
+        try {
+            const { conversationId } = req.body;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+            if(conversation.rules.ownerId === currentUserId) {
+                return res.status(400).json({ message: 'You cant leave because you are the owner of this group' });
+            }
+            conversation.groupMembers = conversation.groupMembers.filter(memberId => memberId!== currentUserId);
+
+            if (!conversation.formerMembers) {
+                conversation.formerMembers = [];
+            }
+            if (!conversation.formerMembers.includes(currentUserId)) {
+                conversation.formerMembers.push(currentUserId);
+            }
+
+            await conversation.save();
+
+            res.json({
+                message: 'You have left the group successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
         }
     }
 }

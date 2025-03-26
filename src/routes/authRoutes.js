@@ -10,5 +10,6 @@ router.post('/register', authController.register.bind(authController));
 router.post('/logout', auth, authController.logout.bind(authController));
 router.patch('/refresh', auth, authController.refreshToken.bind(authController));
 router.put('/change-password', auth, authController.changePassword.bind(authController));
+router.put('/forgot-password', authController.forgotPassword.bind(authController));
 
 module.exports = router;

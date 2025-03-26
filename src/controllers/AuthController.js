@@ -64,13 +64,18 @@ class AuthController {
                 return res.status(400).json({ message: 'All fields are required' });
             }
 
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+            if (!passwordRegex.test(password)) {
+                return res.status(400).json({ message: 'Password must be at least 6 characters and contain both letters and numbers' });
+            }
+
             const existingUser = await User.findOne({ $or: [{ phone }] });
             if (existingUser) {
                 return res.status(400).json({ message: 'Phone already used' });
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            
+
             const last3Digits = phone.slice(-3);
             const birthdayParts = birthday.split('-');
             const formattedBirthday = birthdayParts.length === 3 ?
@@ -89,6 +94,7 @@ class AuthController {
                 birthday,
                 settings: {
                     block_msg_from_strangers: false,
+                    hidden_profile_from_strangers: true,
                 },
                 friendList: [],
                 createdAt: new Date(),
@@ -107,7 +113,7 @@ class AuthController {
             const blacklistKey = `blacklist_${req.decoded.userId}_${req.decoded.jit}`;
             cache.set(blacklistKey, {
                 userId: req.decoded.userId
-            }, 24 * 60 * 60); 
+            }, 24 * 60 * 60);
             await User.findOneAndUpdate({ userId: req.userId }, { lastActive: new Date() });
             res.json({ message: 'Logged out successfully' });
         } catch (error) {
@@ -120,11 +126,11 @@ class AuthController {
             const blacklistKey = `blacklist_${req.decoded.userId}_${req.decoded.jit}`;
             cache.set(blacklistKey, {
                 userId: req.decoded.userId
-            }, 24 * 60 * 60); 
+            }, 24 * 60 * 60);
 
             const user = await User.findOne({ userId: req.userId });
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
             const jit = uuid.v4();
             const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -142,33 +148,61 @@ class AuthController {
             });
 
             await User.findOneAndUpdate({ userId: user.userId }, { lastActive: new Date() });
-        } 
+        }
         catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async changePassword(req, res) {
         try {
-            const {oldPassword, newPassword } = req.body;
+            const { oldPassword, newPassword } = req.body;
             const userId = req.userId;
-            const user = await User.findOne({ userId: userId }); 
+            const user = await User.findOne({ userId: userId });
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
             if (!isPasswordValid) {
                 return res.status(401).json({ message: 'Invalid password' });
             }
-            
+
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+            if (!passwordRegex.test(newPassword)) {
+                return res.status(400).json({ message: 'Password must be at least 6 characters and contain both letters and numbers' });
+            }
+
             const hashedPassword = await bcrypt.hash(newPassword, 10);
             await User.findOneAndUpdate({ userId: userId }, { password: hashedPassword, lastActive: new Date() });
 
             await this.refreshToken(req, res);
-        } 
+        }
         catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async forgotPassword(req, res) {
+        try {
+            const { phone, newPassword } = req.body;
+            const user = await User.findOne({ phone: phone });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+            if (!passwordRegex.test(newPassword)) {
+                return res.status(400).json({ message: 'Password must be at least 6 characters and contain both letters and numbers' });
+            }
+
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await User.findOneAndUpdate({ phone: phone }, { password: hashedPassword });
+
+            res.json({ message: 'Password changed successfully' });
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 }
