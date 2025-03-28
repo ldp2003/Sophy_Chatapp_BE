@@ -4,10 +4,29 @@ const bcrypt = require('bcrypt');
 const Token = require('../models/Token');
 const cache = require('../utils/cache');
 const uuid = require('uuid');
+const rateLimit = require('express-rate-limit');
+const twilio = require('twilio');
+const { v4: uuidv4 } = require('uuid');
+
+const otpCache = new Map();
+const verificationAttempts = new Map();
+
+// const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+const phoneVerificationLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 phút
+    max: 5, // tối đa 5 lần request trong 15 phút
+    message: { message: 'Too many verification attempts, please try again later' },
+    keyGenerator: (req) => req.ip // xài IP làm key
+});
 
 require('dotenv').config();
 
 class AuthController {
+    constructor() {
+        this.phoneVerificationLimiter = phoneVerificationLimiter;
+    }
+    
     async login(req, res) {
         try {
             const { phone, password } = req.body;
@@ -55,6 +74,99 @@ class AuthController {
             res.status(500).json({ message: error.message });
         }
     }
+
+    async checkUsedPhone(req, res) {
+        try {
+            const { phone, countryCode } = req.params;
+            const phoneRegex = /^0\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                return res.status(400).json({ message: 'Invalid phone number format.' });
+            }
+
+            const user = await User.findOne({ phone });
+            if (user) {
+                return res.status(400).json({ message: 'Phone number is already used' });
+            }
+
+            const otp = Math.floor(100000 + Math.random() * 900000).toString(); // OTP 6 số
+            const otpId = uuidv4();
+
+            otpCache.set(phone, {
+                otp,
+                otpId,
+                expiresAt: Date.now() + 5 * 60 * 1000 //5 phút hết hạn
+            });
+
+            try {
+                console.log(`Testing OTP for ${phone}: ${otp}`);
+                return res.json({
+                    message: 'Verification code generated.',
+                    otpId: otpId,
+                    otp: otp
+                });
+            } catch (smsError) {
+                console.error('SMS sending error:', smsError);
+                return res.status(500).json({ message: 'Failed to send verification code' });
+            }
+
+            // try {
+            //     await twilioClient.messages.create({
+            //         body: `Your verification code to register Sophy is: ${otp}`,
+            //         from: process.env.TWILIO_PHONE_NUMBER,
+            //         to: phone
+            //     });
+
+            //     res.json({ 
+            //         message: 'Verification code sent',
+            //         otpId: otpId
+            //     });
+            // } catch (smsError) {
+            //     console.error('SMS sending error:', smsError);
+            //     res.status(500).json({ message: 'Failed to send verification code' });
+            // }
+        }
+        catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async verifyPhoneOTP(req, res) {
+        try {
+            const { phone, otp, otpId } = req.body;
+            
+            const otpData = otpCache.get(phone);
+            
+            if (!otpData || otpData.otpId !== otpId) {
+                return res.status(400).json({ message: 'Invalid verification attempt' });
+            }
+            
+            if (Date.now() > otpData.expiresAt) {
+                otpCache.delete(phone);
+                return res.status(400).json({ message: 'Verification code expired' });
+            }
+            
+            if (otpData.otp !== otp) {
+                const attempts = verificationAttempts.get(phone) || 0;
+                verificationAttempts.set(phone, attempts + 1);
+                
+                if (attempts >= 3) {
+                    otpCache.delete(phone);
+                    verificationAttempts.delete(phone);
+                    return res.status(400).json({ message: 'Too many failed attempts. Please request a new code.' });
+                }
+                
+                return res.status(400).json({ message: 'Invalid verification code' });
+            }
+            
+            otpCache.delete(phone);
+            verificationAttempts.delete(phone);
+            
+            res.json({ message: 'Phone verified successfully' });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
 
     async register(req, res) {
         try {

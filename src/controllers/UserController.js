@@ -1,23 +1,66 @@
 const User = require('../models/User');
 
+
 class UserController {
     async checkUsedPhone(req, res) {
         try {
-            const { phone } = req.params;
+            const { phone, countryCode } = req.params;
+
+            const phoneRegex = /^0\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                return res.status(400).json({ message: 'Invalid phone number format.' });
+            }
+
             const user = await User.findOne({ phone });
             if (user) {
                 return res.status(400).json({ message: 'Phone number is already used' });
             }
-            res.json({ message: 'Phone number is available' }); 
-        } 
+
+            const otp = Math.floor(100000 + Math.random() * 900000).toString(); // OTP 6 số
+            const otpId = uuidv4();
+
+            otpCache.set(phone, {
+                otp,
+                otpId,
+                expiresAt: Date.now() + 5 * 60 * 1000 //5 phút hết hạn
+            });
+
+            try {
+                console.log(`Testing OTP for ${phone}: ${otp}`);
+                return res.json({
+                    message: 'Verification code generated.',
+                    otpId: otpId,
+                    otp: otp
+                });
+            } catch (smsError) {
+                console.error('SMS sending error:', smsError);
+                return res.status(500).json({ message: 'Failed to send verification code' });
+            }
+
+            // try {
+            //     await twilioClient.messages.create({
+            //         body: `Your verification code to register Sophy is: ${otp}`,
+            //         from: process.env.TWILIO_PHONE_NUMBER,
+            //         to: phone
+            //     });
+
+            //     res.json({ 
+            //         message: 'Verification code sent',
+            //         otpId: otpId
+            //     });
+            // } catch (smsError) {
+            //     console.error('SMS sending error:', smsError);
+            //     res.status(500).json({ message: 'Failed to send verification code' });
+            // }
+        }
         catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
     async getUserById(req, res) {
         try {
             const { userId } = req.params;
-            const user = await User.findOne({userId}).select('-password');
+            const user = await User.findOne({ userId }).select('-password');
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
@@ -25,7 +68,7 @@ class UserController {
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
-    } 
+    }
 
     async getUserByPhone(req, res) {
         try {
@@ -47,14 +90,14 @@ class UserController {
             if (!searchParam) {
                 return res.status(400).json({ message: 'Search parameter is required' });
             }
-            
+
             if (/^\d+$/.test(searchParam)) {
                 const users = await User.find({ phone: searchParam }).select('-password -deviceTokens -createdAt -blockList');
                 return res.json(users);
             }
 
             const users = await User.find({
-                fullname: { $regex: searchParam, $options: 'i' } 
+                fullname: { $regex: searchParam, $options: 'i' }
             }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(users);
@@ -65,73 +108,73 @@ class UserController {
 
     async getProfileById(req, res) {
         try {
-            const {userId} = req.params;
-            const user = await User.findOne({userId: userId}).select('-password -deviceTokens -createdAt -blockList')
+            const { userId } = req.params;
+            const user = await User.findOne({ userId: userId }).select('-password -deviceTokens -createdAt -blockList')
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
-            res.json(user); 
+            res.json(user);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async getFriends(req, res) {
         try {
             const userId = req.userId;
-            const user = await User.findOne({userId}).select('-password');
+            const user = await User.findOne({ userId }).select('-password');
 
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const friends = await User.find({ userId: { $in: user.listFriend } }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(friends);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async getBlockedUsers(req, res) {
         try {
             const userId = req.userId;
-            const user = await User.findOne({userId}).select('-password')
-            
+            const user = await User.findOne({ userId }).select('-password')
+
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const blockedUsers = await User.find({ userId: { $in: user.blockList } }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(blockedUsers);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
-        } 
+            res.status(500).json({ message: error.message });
+        }
     }
 
     async updateName(req, res) {
         try {
             const userId = req.userId;
             const { fullname } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { fullname }, { new: true }).select('-password'); 
+            const user = await User.findOneAndUpdate({ userId }, { fullname }, { new: true }).select('-password');
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             res.json(user);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
-        } 
+            res.status(500).json({ message: error.message });
+        }
     }
 
     async updateAvatar(req, res) {
         try {
             const userId = req.userId;
             const { urlavatar } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { urlavatar }, { new: true }).select('-password'); 
+            const user = await User.findOneAndUpdate({ userId }, { urlavatar }, { new: true }).select('-password');
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             res.json(user);
@@ -144,15 +187,15 @@ class UserController {
         try {
             const userId = req.userId;
             const { fullname, gender, birthday } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { fullname, gender, birthday}, { new: true }).select('-password'); 
+            const user = await User.findOneAndUpdate({ userId }, { fullname, gender, birthday }, { new: true }).select('-password');
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             res.json(user);
-        } 
+        }
         catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -160,7 +203,7 @@ class UserController {
         try {
             const userId = req.userId;
             const { blockedUserId } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockedUserId } }, { new: true }).select('-password'); 
+            const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockedUserId } }, { new: true }).select('-password');
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
@@ -175,14 +218,14 @@ class UserController {
         try {
             const userId = req.userId;
             const { blockedUserId } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { $pull: { blockList: blockedUserId } }, { new: true }).select('-password'); 
+            const user = await User.findOneAndUpdate({ userId }, { $pull: { blockList: blockedUserId } }, { new: true }).select('-password');
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             res.json(user);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
