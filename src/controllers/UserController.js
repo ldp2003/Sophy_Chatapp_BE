@@ -1,6 +1,5 @@
 const User = require('../models/User');
 
-
 class UserController {
     async checkUsedPhone(req, res) {
         try {
