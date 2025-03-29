@@ -331,7 +331,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"phone\":\"0123456779\",\r\n    \"oldPassword\":\"1234\",\r\n    \"newPassword\":\"123\"\r\n}",
+					"raw": "{\r\n    \"oldPassword\":\"1234\",\r\n    \"newPassword\":\"123\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -349,6 +349,58 @@
 						"api",
 						"auth",
 						"change-password"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "check phone",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/auth/check-used-phone/0312312312",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"auth",
+						"check-used-phone",
+						"0312312312"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "verify phone",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"phone\":\"0312312312\",\r\n    \"otp\": \"771189\",\r\n    \"otpId\": \"ff9706d9-922a-440d-9594-4504b4213e62\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/auth/verify-phone-otp",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"auth",
+						"verify-phone-otp"
 					]
 				}
 			},
