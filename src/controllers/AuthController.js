@@ -331,23 +331,32 @@ class AuthController {
 
             const userId = `${userPattern}`;
 
-            await User.create({
-                userId,
-                phone,
-                password: hashedPassword,
-                fullname,
-                isMale: isMale,
-                birthday,
-                settings: {
-                    block_msg_from_strangers: false,
-                    hidden_profile_from_strangers: true,
-                },
-                friendList: [],
-                createdAt: new Date(),
-                lastActive: new Date()
-            });
+            try {
+                const newUser = await User.create({
+                    userId,
+                    phone,
+                    password: hashedPassword,
+                    fullname,
+                    isMale: isMale,
+                    birthday,
+                    settings: {
+                        block_msg_from_strangers: false,
+                        hidden_profile_from_strangers: true,
+                    },
+                    friendList: [],
+                    createdAt: new Date(),
+                    lastActive: new Date()
+                });
 
-            return await this.login(req, res);
+                if (newUser) {
+                    return await this.login(req, res);
+                } else {
+                    return res.status(500).json({ message: 'Failed to create user' });
+                }
+            } catch (dbError) {
+                console.error('Database error:', dbError);
+                return res.status(500).json({ message: 'Failed to create user in database' });
+            }
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
