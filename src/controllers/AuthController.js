@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const otpCache = new Map();
 const verificationAttempts = new Map();
+const qrLoginCache = new Map(); 
 
 // const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -167,6 +168,139 @@ class AuthController {
         }
     }
 
+    async generateQrToken(req, res) {
+        try {
+            const qrToken = uuidv4();
+
+            qrLoginCache.set(qrToken, {
+                status: 'pending',
+                createdAt: Date.now(),
+                expiresAt: Date.now() + 5 * 60 * 1000, // 5 phút
+                userId: null
+            });
+            
+            res.json({
+                qrToken: qrToken,
+                expiresAt: Date.now() + 5 * 60 * 1000
+            });
+            
+        } catch (error) {
+            console.error('QR token generation error:', error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async verifyQrToken(req, res) {
+        try {
+            const { qrToken } = req.body;
+            const userId = req.userId; 
+            
+            // Kiểm tra có tồn tại không
+            const tokenData = qrLoginCache.get(qrToken);
+            if (!tokenData) {
+                return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
+            }
+            
+            // Kiểm tra hạn
+            if (Date.now() > tokenData.expiresAt) {
+                qrLoginCache.delete(qrToken);
+                return res.status(400).json({ message: 'QR token đã hết hạn' });
+            }
+            
+            tokenData.status = 'scanned';
+            tokenData.userId = userId;
+            qrLoginCache.set(qrToken, tokenData);
+            
+            res.json({ message: 'QR token xác thực thành công' });
+            
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async confirmQrLogin(req, res) {
+        try {
+            const { qrToken } = req.body;
+            const userId = req.userId;
+            
+            const tokenData = qrLoginCache.get(qrToken);
+            if (!tokenData) {
+                return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
+            }
+            
+            if (Date.now() > tokenData.expiresAt) {
+                qrLoginCache.delete(qrToken);
+                return res.status(400).json({ message: 'QR token đã hết hạn' });
+            }
+            
+            if (tokenData.status !== 'scanned') {
+                return res.status(400).json({ message: 'QR token chưa được quét' });
+            }
+            
+            if (tokenData.userId !== userId) {
+                return res.status(403).json({ message: 'Không có quyền xác nhận QR token này' });
+            }
+            
+            tokenData.status = 'authenticated';
+            qrLoginCache.set(qrToken, tokenData);
+            
+            res.json({ message: 'QR login xác thực thành công' });
+            
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async checkQrStatus(req, res) {
+        try {
+            const { qrToken } = req.params;
+            
+            const tokenData = qrLoginCache.get(qrToken);
+            if (!tokenData) {
+                return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
+            }
+            
+
+            if (Date.now() > tokenData.expiresAt) {
+                qrLoginCache.delete(qrToken);
+                return res.status(400).json({ message: 'QR token đã hết hạn' });
+            }
+            
+            // Nếu token đã được xác thực, trả về thông tin đăng nhập
+            if (tokenData.status === 'authenticated') {
+                const user = await User.findOne({ userId: tokenData.userId });
+                if (!user) {
+                    return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+                }
+                
+                const jit = uuid.v4();
+                const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
+                const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
+                
+                qrLoginCache.delete(qrToken);
+                
+                return res.json({
+                    status: tokenData.status,
+                    token: {
+                        accessToken,
+                        refreshToken
+                    },
+                    user: {
+                        userId: user.userId,
+                        fullname: user.fullname
+                    }
+                });
+            }
+            
+            res.json({
+                status: tokenData.status,
+                expiresAt: tokenData.expiresAt
+            });
+            
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
 
     async register(req, res) {
         try {
