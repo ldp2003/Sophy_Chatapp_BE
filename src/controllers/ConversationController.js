@@ -3,6 +3,9 @@ const MessageDetail = require('../models/MessageDetail');
 const NotificationController = require('./NotificationController');
 const notificationController = new NotificationController();
 const User = require('../models/User');
+const cloudinary = require('../config/cloudinary');
+const DatauriParser = require('datauri/parser');
+const parser = new DatauriParser();
 const { v4: uuidv4 } = require('uuid');
 
 class ConversationController {
@@ -641,6 +644,86 @@ class ConversationController {
         catch (error) {
             res.status(500).json({ message: error.message }); 
         }
+    }
+
+    async updateGroupAvatar(req, res) {
+        try {
+            if(!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
+
+            const userId = req.userId;
+            const user = await User.findOne({ userId });
+            const { conversationId } = req.params;
+            const conversation = await Conversation.findOne({ conversationId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+
+            if (!conversation.groupMembers.includes(userId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+
+            const fileUri = parser.format(
+                req.file.originalname,
+                req.file.buffer
+            ).content;
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+                folder: 'groupAvatars',
+                transformation: [
+                    { width: 500, height: 500, crop: 'fill' },
+                    { quality: 'auto' }
+                ]
+            });
+
+            if(conversation.groupAvatarUrl && uploadResponse.secure_url){
+                const publicId = conversation.groupAvatarUrl.split('/').pop().split('.')[0];
+                try{
+                    await cloudinary.uploader.destroy(`groupAvatars/${publicId}`);
+                }catch(error){
+                    console.error('Error deleting old group avatar:', error); 
+                }
+            }
+
+            const updatedConversation = await Conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { groupAvatarUrl: uploadResponse.secure_url },
+                { new: true }
+            );
+
+            await notificationController.createNotification(
+                'UPDATE_GROUP_AVATAR',
+                conversationId,
+                userId,
+                [],
+                `${user.fullname} đã thay đổi ảnh đại diện nhóm`
+            )
+
+            res.json({
+                message: 'Group avatar updated successfully',
+                conversation: updatedConversation
+            });
+        } catch (error) {
+            
+        }
+    }
+
+    async updateGroupBackground(req, res) {
+        try {
+
+        } catch (error) {
+            
+        } 
     }
 }
 

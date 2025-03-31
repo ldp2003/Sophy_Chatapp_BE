@@ -19,7 +19,7 @@ const schema = new mongoose.Schema({
     actorId: String,      // ai làm
     targetIds: [{         // ai bị ảnh hưởng, ví dụ như delete thì toàn bộ member bị ảnh hưởng, leave thì target cũng là actor, set owner thì target vừa là actor vừa là người khác
         type: String,
-        required: true
+        required: false
     }],
     content: String,
     createdAt: {

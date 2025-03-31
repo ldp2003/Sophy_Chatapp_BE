@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ConversationController = require('../controllers/ConversationController');
 const auth = require('../middleware/auth');
-
+const upload = require('../middleware/upload');
 const conversationController = new ConversationController();
 
 router.get('/', auth, conversationController.getConversations.bind(conversationController));
@@ -18,7 +18,7 @@ router.put('/group/set-owner/:userId', auth, conversationController.setOwner.bin
 router.put('/group/delete/:conversationId', auth, conversationController.deleteGroup.bind(conversationController));
 router.put('/group/:conversationId/leave', auth, conversationController.leaveGroup.bind(conversationController));
 router.put('/group/update/name/:conversationId', auth, conversationController.updateGroupName.bind(conversationController));
-router.put('/group/update/avatar/:conversationId', auth, conversationController.updateGroupAvatar.bind(conversationController));
+router.put('/group/update/avatar/:conversationId', auth, upload.single('groupAvatar'), conversationController.updateGroupAvatar.bind(conversationController));
 router.put('/group/update/background/:conversationId', auth, conversationController.updateGroupBackground.bind(conversationController));
 
 module.exports = router;
