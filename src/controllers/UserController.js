@@ -182,22 +182,12 @@ class UserController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            // Xóa avatar cũ trên cloundinary nếu nó tồn tại
-            if (user.urlavatar) {
-                const publicId = user.urlavatar.split('/').pop().split('.')[0];
-                try {
-                    await cloudinary.uploader.destroy(`avatars/${publicId}`);
-                } catch (deleteError) {
-                    console.error('Error deleting old avatar:', deleteError);
-                }
-            }
-
             const fileUri = parser.format(
                 req.file.originalname,
                 req.file.buffer
             ).content;
 
-            // tải len cloud
+            // tải avatar mới lên cloud
             const uploadResponse = await cloudinary.uploader.upload(fileUri, {
                 folder: 'avatars',
                 transformation: [
@@ -205,6 +195,16 @@ class UserController {
                     { quality: 'auto' }
                 ]
             });
+
+            // xóa cái cũ nếu tải oke
+            if (user.urlavatar && uploadResponse.secure_url) {
+                const publicId = user.urlavatar.split('/').pop().split('.')[0];
+                try {
+                    await cloudinary.uploader.destroy(`avatars/${publicId}`);
+                } catch (deleteError) {
+                    console.error('Error deleting old avatar:', deleteError);
+                }
+            }
 
             const updatedUser = await User.findOneAndUpdate(
                 { userId },
