@@ -225,8 +225,18 @@ class UserController {
     async updateInfo(req, res) {
         try {
             const userId = req.userId;
-            const { fullname, gender, birthday } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { fullname, gender, birthday }, { new: true }).select('-password');
+            const { fullname, isMale, birthday } = req.body;
+
+            const user = await User.findOneAndUpdate(
+                { userId }, 
+                { 
+                    fullname, 
+                    isMale: isMale, 
+                    birthday 
+                }, 
+                { new: true }
+            ).select('-password');
+
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }

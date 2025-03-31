@@ -636,6 +636,12 @@ class ConversationController {
                 `${currentUser.fullname} đã đổi tên nhóm thành ${newName}`
             )
 
+            io.to(conversationId).emit('groupNameUpdated', {
+                conversationId,
+                newName,
+                updatedBy: currentUserId
+            });
+
             res.json({
                 message: 'Group name updated successfully',
                 conversation: conversation
@@ -708,6 +714,12 @@ class ConversationController {
                 [],
                 `${user.fullname} đã thay đổi ảnh đại diện nhóm`
             )
+            
+            io.to(conversationId).emit('groupAvatarUpdated', {
+                conversationId,
+                newAvatarUrl: uploadResponse.secure_url,
+                updatedBy: userId
+            });
 
             res.json({
                 message: 'Group avatar updated successfully',
@@ -780,6 +792,12 @@ class ConversationController {
                 [],
                 `${user.fullname} đã thay đổi ảnh nền nhóm` 
             )
+
+            io.to(conversationId).emit('groupBackgroundUpdated', {
+                conversationId,
+                newBackgroundUrl: uploadResponse.secure_url,
+                updatedBy: userId
+            });
 
             res.json({
                 message: 'Group background updated successfully',
