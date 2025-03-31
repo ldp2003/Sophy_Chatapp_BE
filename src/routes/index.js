@@ -10,7 +10,7 @@ const setRoutes = (app) => {
     app.use('/api/users', userRoutes);
     app.use('/api/conversations', conversationRoutes);
     app.use('/api/messages', messageRoutes);
-    app.use('/api/notification', notificationRoutes);
+    app.use('/api/notifications', notificationRoutes);
 };
 
 module.exports = setRoutes;
