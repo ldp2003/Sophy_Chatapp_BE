@@ -1,5 +1,7 @@
 const Conversation = require('../models/Conversation');
 const MessageDetail = require('../models/MessageDetail');
+const NotificationController = require('./NotificationController');
+const notificationController = new NotificationController();
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
@@ -187,6 +189,14 @@ class ConversationController {
             conversation.groupMembers.push(userId);
             await conversation.save();
 
+            await notificationController.createNotification(
+                'ADD_MEMBER',
+                conversationId,
+                currentUserId,
+                [userId],
+                `${currentUser.fullname} đã thêm ${user.fullname} vào nhóm`
+            );
+
             res.json(conversation);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -243,6 +253,15 @@ class ConversationController {
                 }
 
                 await conversation.save();
+
+                await notificationController.createNotification(
+                    'REMOVE_MEMBER',
+                    conversationId,
+                    currentUserId,
+                    [userId],
+                    `${currentUser.fullname} đã xóa ${user.fullname} khỏi nhóm`
+                );
+
                 return res.json({ message: 'User removed from group successfully' });
             }
 
@@ -264,6 +283,14 @@ class ConversationController {
                 }
 
                 await conversation.save();
+
+                await notificationController.createNotification(
+                    'REMOVE_MEMBER',
+                    conversationId,
+                    currentUserId,
+                    [userId],
+                    `${currentUser.fullname} đã xóa ${user.fullname} khỏi nhóm`
+                );
                 return res.json({ message: 'User removed from group successfully' });
             }
 
@@ -324,6 +351,17 @@ class ConversationController {
 
             await conversation.save();
 
+            const coOwnerUsers = await User.find({ userId: { $in: coOwnerIds } });
+            const coOwnerNames = coOwnerUsers.map(user => user.fullname).join(', ');
+
+            await notificationController.createNotification(
+                'SET_CO_OWNER',
+                conversationId,
+                currentUserId,
+                coOwnerIds,
+                `${currentUser.fullname} đã bổ nhiệm ${coOwnerNames} làm phó nhóm`
+            );
+
             res.json({
                 message: 'Co-owners updated successfully',
                 conversation: conversation
@@ -372,6 +410,14 @@ class ConversationController {
             conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
             await conversation.save();
 
+            await notificationController.createNotification(
+                'REMOVE_CO_OWNER',
+                conversationId,
+                currentUserId,
+                [userId],
+                `${currentUser.fullname} đã cắt chức phó nhóm của ${targetUser.fullname}` 
+            )
+
             res.json({
                 message: 'Co-owner removed successfully',
                 conversation: conversation
@@ -418,6 +464,14 @@ class ConversationController {
 
             conversation.rules.ownerId = userId;
             await conversation.save();
+
+            await notificationController.createNotification(
+                'SET_OWNER',
+                conversationId,
+                currentUserId,
+                [userId],
+                `${currentUser.fullname} đã chuyển quyền chủ nhóm cho ${targetUser.fullname}` 
+            )
 
             res.json({
                 message: 'Owner updated successfully',
@@ -467,11 +521,19 @@ class ConversationController {
                     conversation.formerMembers.push(memberId);
                 }
             }
+            const groupMembers = conversation.groupMembers; // lưu lại cho thông báo
 
             conversation.groupMembers = [];
 
             await conversation.save();
 
+            await notificationController.createNotification(
+                'DELETE_GROUP',
+                conversationId,
+                currentUserId,
+                groupMembers,
+                `${currentUser.fullname} đã giải tán nhóm`
+            )
             res.json({
                 message: 'Group deleted successfully',
                 conversation: conversation
@@ -517,6 +579,14 @@ class ConversationController {
 
             await conversation.save();
 
+            await notificationController.createNotification(
+                'LEAVE_GROUP',
+                conversationId,
+                currentUserId,
+                [currentUserId],
+                `${currentUser.fullname} đã rời khỏi nhóm` 
+            )
+            
             res.json({
                 message: 'You have left the group successfully',
                 conversation: conversation

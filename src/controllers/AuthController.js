@@ -266,7 +266,7 @@ class AuthController {
                 return res.status(400).json({ message: 'QR token đã hết hạn' });
             }
             
-            // Nếu token đã được xác thực, trả về thông tin đăng nhập
+            // Nếu token đã được xác thực thì làm tạo jwt để xác thực rồi đăng nhập giống login
             if (tokenData.status === 'authenticated') {
                 const user = await User.findOne({ userId: tokenData.userId });
                 if (!user) {
