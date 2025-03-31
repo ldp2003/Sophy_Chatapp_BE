@@ -720,7 +720,71 @@ class ConversationController {
 
     async updateGroupBackground(req, res) {
         try {
+            if(!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
 
+            const userId = req.userId;
+            const user = await User.findOne({ userId });
+            const { conversationId } = req.params;
+            const conversation = await Conversation.findOne({ conversationId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+
+            if (!conversation.groupMembers.includes(userId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+
+            const fileUri = parser.format(
+                req.file.originalname,
+                req.file.buffer
+            ).content;
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+                folder: 'groupBackgrounds',
+                transformation: [
+                    { quality: 'auto', fetch_format: 'auto' },
+                    { flags: 'preserve_transparency' }
+                ]
+            });
+
+            if(conversation.groupBackgroundUrl && uploadResponse.secure_url){
+                const publicId = conversation.groupBackgroundUrl.split('/').pop().split('.')[0];
+                try{
+                    await cloudinary.uploader.destroy(`groupBackgrounds/${publicId}`);  
+                } catch(error){
+                    console.error('Error deleting old group background:', error);
+                }
+            }
+
+            const updatedConversation = await Conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { groupBackgroundUrl: uploadResponse.secure_url },
+                { new: true } 
+            )
+
+            await notificationController.createNotification(
+                'UPDATE_GROUP_BACKGROUND',
+                conversationId,
+                userId,
+                [],
+                `${user.fullname} đã thay đổi ảnh nền nhóm` 
+            )
+
+            res.json({
+                message: 'Group background updated successfully',
+                conversation: updatedConversation 
+            })
         } catch (error) {
             
         } 
