@@ -3,6 +3,7 @@ const router = express.Router();
 const UserController = require('../controllers/UserController');
 const FriendRequestController = require('../controllers/FriendRequestController');
 const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const userController = new UserController();
 const friendRequestController = new FriendRequestController();
 
@@ -11,7 +12,7 @@ router.get('/get-user/:phone', auth, userController.getUserByPhone.bind(userCont
 router.get('/get-user-by-id/:userId', auth, userController.getUserById.bind(userController));
 router.get('/search/:param', auth, userController.searchUsers.bind(userController));
 router.put('/update-user/name', auth, userController.updateName.bind(userController));
-router.put('/update-user/avatar', auth, userController.updateAvatar.bind(userController));
+router.put('/update-user/avatar', auth, upload.single('avatar'), userController.updateAvatar.bind(userController));
 router.put('/update-user/info', auth, userController.updateInfo.bind(userController));
 router.get('/friends', auth, userController.getFriends.bind(userController));
 router.get('/get-profile/:userId', auth, userController.getProfileById.bind(userController));

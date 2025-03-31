@@ -1,5 +1,4 @@
 const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
 const MessageDetail = require('../models/MessageDetail');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');

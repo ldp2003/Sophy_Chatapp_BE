@@ -1,4 +1,7 @@
 const User = require('../models/User');
+const cloudinary = require('../config/cloudinary');
+const DatauriParser = require('datauri/parser');
+const parser = new DatauriParser();
 
 class UserController {
     async checkUsedPhone(req, res) {
@@ -169,15 +172,42 @@ class UserController {
 
     async updateAvatar(req, res) {
         try {
+            if (!req.file) {
+                return res.status(400).json({ message: 'No image file provided' });
+            }
+
             const userId = req.userId;
-            const { urlavatar } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { urlavatar }, { new: true }).select('-password');
+            const user = await User.findOne({ userId });
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            res.json(user);
+            const fileUri = parser.format(
+                req.file.originalname,
+                req.file.buffer
+            ).content;
+
+            // tải len cloud
+            const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+                folder: 'avatars',
+                transformation: [
+                    { width: 500, height: 500, crop: 'fill' },
+                    { quality: 'auto' }
+                ]
+            });
+
+            const updatedUser = await User.findOneAndUpdate(
+                { userId },
+                { urlavatar: uploadResponse.secure_url },
+                { new: true }
+            ).select('-password');
+
+            res.json({
+                message: 'Avatar updated successfully',
+                user: updatedUser
+            });
         } catch (error) {
+            console.error('Avatar update error:', error);
             res.status(500).json({ message: error.message });
         }
     }
