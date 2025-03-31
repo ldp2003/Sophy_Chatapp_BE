@@ -586,13 +586,60 @@ class ConversationController {
                 [currentUserId],
                 `${currentUser.fullname} đã rời khỏi nhóm` 
             )
-            
+
             res.json({
                 message: 'You have left the group successfully',
                 conversation: conversation
             });
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async updateGroupName(req, res) {
+        try {
+            const { conversationId, newName } = req.body;
+            const currentUserId = req.userId;
+            const currentUser = await User.findOne({ userId: currentUserId });
+            const conversation = await Conversation.findOne({ conversationId }); 
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' }); 
+            }
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' }); 
+            }
+
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+
+            await conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { name: newName },
+                { new: true }
+            );
+
+            await notificationController.createNotification(
+                'UPDATE_GROUP_NAME',
+                conversationId,
+                currentUserId,
+                conversation.groupMembers,
+                `${currentUser.fullname} đã đổi tên nhóm thành ${newName}`
+            )
+
+            res.json({
+                message: 'Group name updated successfully',
+                conversation: conversation
+            });
+        } 
+        catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 }
