@@ -1,13 +1,13 @@
 const AuthController = require('./AuthController');
 const UserController = require('./UserController');
-// const MessageController = require('./MessageController');
 const conversationController = require('./ConversationController');
 const messageDetailController = require('./MessageDetailController');
+const friendRequestController = require('./FriendRequestController');
 
 module.exports = {
     AuthController,
     UserController,
-    // MessageController,
     conversationController,
-    messageDetailController
+    messageDetailController,
+    friendRequestController
 };

@@ -7,6 +7,7 @@ const cloudinary = require('../config/cloudinary');
 const DatauriParser = require('datauri/parser');
 const parser = new DatauriParser();
 const { v4: uuidv4 } = require('uuid');
+const { getSocketController } = require('../socket');
 
 class ConversationController {
     async getConversations(req, res) {
@@ -601,10 +602,15 @@ class ConversationController {
 
     async updateGroupName(req, res) {
         try {
-            const { conversationId, newName } = req.body;
+            const { newName } = req.body;
+            const { conversationId } = req.params;
             const currentUserId = req.userId;
             const currentUser = await User.findOne({ userId: currentUserId });
             const conversation = await Conversation.findOne({ conversationId }); 
+
+            if(!newName) {
+                return res.status(400).json({ message: 'New name is empty' });  
+            }
 
             if (!currentUser) {
                 return res.status(404).json({ message: 'CurrentUser not found' }); 
@@ -622,9 +628,18 @@ class ConversationController {
                 return res.status(403).json({ message: 'You are not a member of this group' });
             }
 
-            await conversation.findOneAndUpdate(
+            if(conversation.groupName === newName) {
+                return res.status(400).json({ message: 'New name is the same as the current name' });
+            }
+
+            if(newName.length < 3 || newName.length > 50) {
+                return res.status(400).json({ message: 'New name must be between 3 and 50 characters' });
+            }
+            
+            
+            await Conversation.findOneAndUpdate(
                 { conversationId: conversationId },
-                { name: newName },
+                { groupName: newName },
                 { new: true }
             );
 
@@ -635,16 +650,12 @@ class ConversationController {
                 conversation.groupMembers,
                 `${currentUser.fullname} đã đổi tên nhóm thành ${newName}`
             )
-
-            io.to(conversationId).emit('groupNameUpdated', {
-                conversationId,
-                newName,
-                updatedBy: currentUserId
-            });
+            
+            const updatedConversation = await Conversation.findOne({ conversationId });
 
             res.json({
                 message: 'Group name updated successfully',
-                conversation: conversation
+                conversation: updatedConversation
             });
         } 
         catch (error) {
@@ -701,7 +712,7 @@ class ConversationController {
                 }
             }
 
-            const updatedConversation = await Conversation.findOneAndUpdate(
+            await Conversation.findOneAndUpdate(
                 { conversationId: conversationId },
                 { groupAvatarUrl: uploadResponse.secure_url },
                 { new: true }
@@ -715,12 +726,12 @@ class ConversationController {
                 `${user.fullname} đã thay đổi ảnh đại diện nhóm`
             )
             
-            io.to(conversationId).emit('groupAvatarUpdated', {
-                conversationId,
-                newAvatarUrl: uploadResponse.secure_url,
-                updatedBy: userId
-            });
-
+            // io.to(conversationId).emit('groupAvatarUpdated', {
+            //     conversationId,
+            //     newAvatarUrl: uploadResponse.secure_url,
+            //     updatedBy: userId
+            // });
+            const updatedConversation = await Conversation.findOne({ conversationId });
             res.json({
                 message: 'Group avatar updated successfully',
                 conversation: updatedConversation
@@ -779,7 +790,7 @@ class ConversationController {
                 }
             }
 
-            const updatedConversation = await Conversation.findOneAndUpdate(
+            await Conversation.findOneAndUpdate(
                 { conversationId: conversationId },
                 { groupBackgroundUrl: uploadResponse.secure_url },
                 { new: true } 
@@ -793,12 +804,12 @@ class ConversationController {
                 `${user.fullname} đã thay đổi ảnh nền nhóm` 
             )
 
-            io.to(conversationId).emit('groupBackgroundUpdated', {
-                conversationId,
-                newBackgroundUrl: uploadResponse.secure_url,
-                updatedBy: userId
-            });
-
+            // io.to(conversationId).emit('groupBackgroundUpdated', {
+            //     conversationId,
+            //     newBackgroundUrl: uploadResponse.secure_url,
+            //     updatedBy: userId
+            // });
+            const updatedConversation = await Conversation.findOne({ conversationId });
             res.json({
                 message: 'Group background updated successfully',
                 conversation: updatedConversation 
