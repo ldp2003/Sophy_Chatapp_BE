@@ -14,18 +14,37 @@ const qrLoginCache = new Map();
 
 // const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-const phoneVerificationLimiter = rateLimit({
+const checkPhoneLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 phút
     max: 5, // tối đa 5 lần request trong 15 phút
+    message: { message: 'Too many verification attempts, please try again later' }, 
+})
+const phoneVerificationLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
     message: { message: 'Too many verification attempts, please try again later' },
     keyGenerator: (req) => req.ip // xài IP làm key
 });
+
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 5, 
+    message: { message: 'Too many verification attempts, please try again later' }, 
+})
+const forgotPasswordVerificationLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { message: 'Too many verification attempts, please try again later' }, 
+})
 
 require('dotenv').config();
 
 class AuthController {
     constructor() {
+        this.checkPhoneLimiter = checkPhoneLimiter;
         this.phoneVerificationLimiter = phoneVerificationLimiter;
+        this.forgotPasswordLimiter = forgotPasswordLimiter;
+        this.forgotPasswordVerificationLimiter = forgotPasswordVerificationLimiter;
     }
     
     async login(req, res) {
@@ -435,6 +454,40 @@ class AuthController {
         }
         catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async sendOTPForgotPassword(req, res) {
+        try {
+            const { phone } = req.body;
+            const user = await User.findOne({ phone: phone });
+            
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpId = uuidv4();
+
+            otpCache.set(phone, {
+                otp,
+                otpId,
+                expiresAt: Date.now() + 5 * 60 * 1000 
+            });
+
+            try {
+                console.log(`Testing OTP for ${phone}: ${otp}`);
+                return res.json({
+                    message: 'Verification code generated.',
+                    otpId: otpId,
+                    otp: otp
+                });
+            } catch (smsError) {
+                console.error('SMS sending error:', smsError);
+                return res.status(500).json({ message: 'Failed to send verification code' });
+            }
+        }  catch (error) {
+            res.status(500).json({ message: error.message });  
         }
     }
 
