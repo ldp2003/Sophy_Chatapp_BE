@@ -490,6 +490,25 @@ class AuthController {
                     otpId: otpId,
                     otp: otp
                 });
+
+                // console.log('Twilio Config:', {
+                //     accountSid: process.env.TWILIO_ACCOUNT_SID?.substring(0, 5) + '...',
+                //     fromNumber: process.env.TWILIO_PHONE_NUMBER,
+                //     toNumber: `+84${phone.substring(1)}`
+                // });
+
+                // const message = await twilioClient.messages.create({
+                //     body: `Your verification code to reset password is: ${otp}`,
+                //     from: process.env.TWILIO_PHONE_NUMBER,
+                //     to: `+84${phone.substring(1)}`
+                // });
+                
+                // console.log('Twilio Message SID:', message.sid);
+                
+                // res.json({ 
+                //     message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
+                //     otpId: otpId
+                // });
             } catch (smsError) {
                 console.error('SMS sending error:', smsError);
                 return res.status(500).json({ message: 'Failed to send verification code' });
