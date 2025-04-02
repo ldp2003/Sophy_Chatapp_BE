@@ -117,41 +117,41 @@ class AuthController {
                 expiresAt: Date.now() + 5 * 60 * 1000 //5 phút hết hạn
             });
 
-            // try {
-            //     console.log(`Testing OTP for ${phone}: ${otp}`);
-            //     return res.json({
-            //         message: 'Verification code generated.',
-            //         otpId: otpId,
-            //         otp: otp
-            //     });
-            // } catch (smsError) {
-            //     console.error('SMS sending error:', smsError);
-            //     return res.status(500).json({ message: 'Failed to send verification code' });
-            // }
-            
             try {
-                console.log('Twilio Config:', {
-                    accountSid: process.env.TWILIO_ACCOUNT_SID?.substring(0, 5) + '...',
-                    fromNumber: process.env.TWILIO_PHONE_NUMBER,
-                    toNumber: `+84${phone.substring(1)}`
-                });
-
-                const message = await twilioClient.messages.create({
-                    body: `Your verification code to register Sophy is: ${otp}`,
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: `+84${phone.substring(1)}`
-                });
-                
-                console.log('Twilio Message SID:', message.sid);
-                
-                res.json({ 
-                    message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
-                    otpId: otpId
+                console.log(`Testing OTP for ${phone}: ${otp}`);
+                return res.json({
+                    message: 'Verification code generated.',
+                    otpId: otpId,
+                    otp: otp
                 });
             } catch (smsError) {
                 console.error('SMS sending error:', smsError);
-                res.status(500).json({ message: 'Failed to send verification code' });
+                return res.status(500).json({ message: 'Failed to send verification code' });
             }
+            
+            // try {
+            //     console.log('Twilio Config:', {
+            //         accountSid: process.env.TWILIO_ACCOUNT_SID?.substring(0, 5) + '...',
+            //         fromNumber: process.env.TWILIO_PHONE_NUMBER,
+            //         toNumber: `+84${phone.substring(1)}`
+            //     });
+
+            //     const message = await twilioClient.messages.create({
+            //         body: `Your verification code to register Sophy is: ${otp}`,
+            //         from: process.env.TWILIO_PHONE_NUMBER,
+            //         to: `+84${phone.substring(1)}`
+            //     });
+                
+            //     console.log('Twilio Message SID:', message.sid);
+                
+            //     res.json({ 
+            //         message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
+            //         otpId: otpId
+            //     });
+            // } catch (smsError) {
+            //     console.error('SMS sending error:', smsError);
+            //     res.status(500).json({ message: 'Failed to send verification code' });
+            // }
         }
         catch (error) {
             res.status(500).json({ message: error.message });
