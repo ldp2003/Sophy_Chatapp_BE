@@ -327,7 +327,7 @@ class UserController {
     async updateInfoMobile(req, res) {
         try {
             const userId = req.userId;
-            const { fullname, isMale, birthday, urlavatar } = req.body;
+            const { fullname, isMale, birthday } = req.body;
             const user = await User.findOne({ userId });
 
             if (!user) {
@@ -338,7 +338,6 @@ class UserController {
             if (fullname !== undefined) updateFields.fullname = fullname;
             if (isMale !== undefined) updateFields.isMale = isMale;
             if (birthday !== undefined) updateFields.birthday = birthday;
-            if (urlavatar!== undefined) updateFields.urlavatar = urlavatar;
 
             if (Object.keys(updateFields).length === 0) {
                 return res.status(400).json({ message: 'No fields to update' });
@@ -349,15 +348,6 @@ class UserController {
                 updateFields,
                 { new: true }
             ).select('-password');
-            
-            if (user.urlavatar) {
-                const publicId = user.urlavatar.split('/').pop().split('.')[0];
-                try {
-                    await cloudinary.uploader.destroy(`avatars/${publicId}`);
-                } catch (deleteError) {
-                    console.error('Error deleting old avatar:', deleteError);
-                }
-            }
             
             res.json({
                 message: 'Profile updated successfully',
