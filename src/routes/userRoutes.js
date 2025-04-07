@@ -14,6 +14,8 @@ router.get('/search/:param', auth, userController.searchUsers.bind(userControlle
 router.put('/update-user/name', auth, userController.updateName.bind(userController));
 router.put('/update-user/avatar', auth, upload.single('avatar'), userController.updateAvatar.bind(userController));
 router.put('/update-user/info', auth, userController.updateInfo.bind(userController));
+router.put('/mobile/update-avatar', auth, userController.updateAvatarMobile.bind(userController));
+router.put('/mobile/update-info', auth, userController.updateInfoMobile.bind(userController));
 router.get('/friends', auth, userController.getFriends.bind(userController));
 router.get('/get-profile/:userId', auth, userController.getProfileById.bind(userController));
 router.put('/block/:userId', auth, userController.blockUser.bind(userController));

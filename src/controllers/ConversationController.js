@@ -419,7 +419,7 @@ class ConversationController {
                 conversationId,
                 currentUserId,
                 [userId],
-                `${currentUser.fullname} đã cắt chức phó nhóm của ${targetUser.fullname}` 
+                `${currentUser.fullname} đã cắt chức phó nhóm của ${targetUser.fullname}`
             )
 
             res.json({
@@ -474,7 +474,7 @@ class ConversationController {
                 conversationId,
                 currentUserId,
                 [userId],
-                `${currentUser.fullname} đã chuyển quyền chủ nhóm cho ${targetUser.fullname}` 
+                `${currentUser.fullname} đã chuyển quyền chủ nhóm cho ${targetUser.fullname}`
             )
 
             res.json({
@@ -569,10 +569,10 @@ class ConversationController {
             if (!conversation.rules) {
                 return res.status(400).json({ message: 'Group rules not defined' });
             }
-            if(conversation.rules.ownerId === currentUserId) {
+            if (conversation.rules.ownerId === currentUserId) {
                 return res.status(400).json({ message: 'You cant leave because you are the owner of this group' });
             }
-            conversation.groupMembers = conversation.groupMembers.filter(memberId => memberId!== currentUserId);
+            conversation.groupMembers = conversation.groupMembers.filter(memberId => memberId !== currentUserId);
 
             if (!conversation.formerMembers) {
                 conversation.formerMembers = [];
@@ -588,7 +588,7 @@ class ConversationController {
                 conversationId,
                 currentUserId,
                 [currentUserId],
-                `${currentUser.fullname} đã rời khỏi nhóm` 
+                `${currentUser.fullname} đã rời khỏi nhóm`
             )
 
             res.json({
@@ -606,18 +606,18 @@ class ConversationController {
             const { conversationId } = req.params;
             const currentUserId = req.userId;
             const currentUser = await User.findOne({ userId: currentUserId });
-            const conversation = await Conversation.findOne({ conversationId }); 
+            const conversation = await Conversation.findOne({ conversationId });
 
-            if(!newName) {
-                return res.status(400).json({ message: 'New name is empty' });  
+            if (!newName) {
+                return res.status(400).json({ message: 'New name is empty' });
             }
 
             if (!currentUser) {
-                return res.status(404).json({ message: 'CurrentUser not found' }); 
+                return res.status(404).json({ message: 'CurrentUser not found' });
             }
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found' }); 
+                return res.status(404).json({ message: 'Conversation not found' });
             }
 
             if (!conversation.isGroup) {
@@ -628,15 +628,15 @@ class ConversationController {
                 return res.status(403).json({ message: 'You are not a member of this group' });
             }
 
-            if(conversation.groupName === newName) {
+            if (conversation.groupName === newName) {
                 return res.status(400).json({ message: 'New name is the same as the current name' });
             }
 
-            if(newName.length < 3 || newName.length > 50) {
+            if (newName.length < 3 || newName.length > 50) {
                 return res.status(400).json({ message: 'New name must be between 3 and 50 characters' });
             }
-            
-            
+
+
             await Conversation.findOneAndUpdate(
                 { conversationId: conversationId },
                 { groupName: newName },
@@ -650,22 +650,22 @@ class ConversationController {
                 conversation.groupMembers,
                 `${currentUser.fullname} đã đổi tên nhóm thành ${newName}`
             )
-            
+
             const updatedConversation = await Conversation.findOne({ conversationId });
 
             res.json({
                 message: 'Group name updated successfully',
                 conversation: updatedConversation
             });
-        } 
+        }
         catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async updateGroupAvatar(req, res) {
         try {
-            if(!req.file) {
+            if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
             }
 
@@ -703,20 +703,31 @@ class ConversationController {
                 ]
             });
 
-            if(conversation.groupAvatarUrl && uploadResponse.secure_url){
-                const publicId = conversation.groupAvatarUrl.split('/').pop().split('.')[0];
-                try{
-                    await cloudinary.uploader.destroy(`groupAvatars/${publicId}`);
-                }catch(error){
-                    console.error('Error deleting old group avatar:', error); 
+            let updatedConversation;
+            try {
+                updatedConversation = await Conversation.findOneAndUpdate(
+                    { conversationId: conversationId },
+                    { groupAvatarUrl: uploadResponse.secure_url },
+                    { new: true }
+                );
+
+                if (!updatedConversation) {
+                    await cloudinary.uploader.destroy(`groupAvatars/${uploadResponse.public_id}`);
+                    return res.status(500).json({ message: 'Failed to update group avatar' });
                 }
+            } catch (dbError) {
+                await cloudinary.uploader.destroy(`groupAvatars/${uploadResponse.public_id}`);
+                return res.status(500).json({ message: 'Failed to update group avatar in database' });
             }
 
-            await Conversation.findOneAndUpdate(
-                { conversationId: conversationId },
-                { groupAvatarUrl: uploadResponse.secure_url },
-                { new: true }
-            );
+            if (conversation.groupAvatarUrl && uploadResponse.secure_url) {
+                const publicId = conversation.groupAvatarUrl.split('/').pop().split('.')[0];
+                try {
+                    await cloudinary.uploader.destroy(`groupAvatars/${publicId}`);
+                } catch (error) {
+                    console.error('Error deleting old group avatar:', error);
+                }
+            }
 
             await notificationController.createNotification(
                 'UPDATE_GROUP_AVATAR',
@@ -725,25 +736,24 @@ class ConversationController {
                 [],
                 `${user.fullname} đã thay đổi ảnh đại diện nhóm`
             )
-            
+
             // io.to(conversationId).emit('groupAvatarUpdated', {
             //     conversationId,
             //     newAvatarUrl: uploadResponse.secure_url,
             //     updatedBy: userId
             // });
-            const updatedConversation = await Conversation.findOne({ conversationId });
             res.json({
                 message: 'Group avatar updated successfully',
                 conversation: updatedConversation
             });
         } catch (error) {
-            
+            res.status(500).json({ message: error.message });
         }
     }
 
     async updateGroupBackground(req, res) {
         try {
-            if(!req.file) {
+            if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
             }
 
@@ -781,11 +791,11 @@ class ConversationController {
                 ]
             });
 
-            if(conversation.groupBackgroundUrl && uploadResponse.secure_url){
+            if (conversation.groupBackgroundUrl && uploadResponse.secure_url) {
                 const publicId = conversation.groupBackgroundUrl.split('/').pop().split('.')[0];
-                try{
-                    await cloudinary.uploader.destroy(`groupBackgrounds/${publicId}`);  
-                } catch(error){
+                try {
+                    await cloudinary.uploader.destroy(`groupBackgrounds/${publicId}`);
+                } catch (error) {
                     console.error('Error deleting old group background:', error);
                 }
             }
@@ -793,7 +803,7 @@ class ConversationController {
             await Conversation.findOneAndUpdate(
                 { conversationId: conversationId },
                 { groupBackgroundUrl: uploadResponse.secure_url },
-                { new: true } 
+                { new: true }
             )
 
             await notificationController.createNotification(
@@ -801,7 +811,7 @@ class ConversationController {
                 conversationId,
                 userId,
                 [],
-                `${user.fullname} đã thay đổi ảnh nền nhóm` 
+                `${user.fullname} đã thay đổi ảnh nền nhóm`
             )
 
             // io.to(conversationId).emit('groupBackgroundUpdated', {
@@ -812,11 +822,11 @@ class ConversationController {
             const updatedConversation = await Conversation.findOne({ conversationId });
             res.json({
                 message: 'Group background updated successfully',
-                conversation: updatedConversation 
+                conversation: updatedConversation
             })
         } catch (error) {
-            
-        } 
+            res.status(500).json({ message: error.message });
+        }
     }
 }
 

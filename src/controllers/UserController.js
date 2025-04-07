@@ -196,6 +196,18 @@ class UserController {
                 ]
             });
 
+            const updatedUser = await User.findOneAndUpdate(
+                { userId },
+                { urlavatar: uploadResponse.secure_url },
+                { new: true }
+            ).select('-password');
+
+            //xóa ảnh vừa tải nếu update lỗi
+            if (!updatedUser) {
+                await cloudinary.uploader.destroy(`avatars/${uploadResponse.public_id}`);
+                return res.status(500).json({ message: 'Failed to update user' });
+            }
+
             // xóa cái cũ nếu tải oke
             if (user.urlavatar && uploadResponse.secure_url) {
                 const publicId = user.urlavatar.split('/').pop().split('.')[0];
@@ -205,12 +217,6 @@ class UserController {
                     console.error('Error deleting old avatar:', deleteError);
                 }
             }
-
-            const updatedUser = await User.findOneAndUpdate(
-                { userId },
-                { urlavatar: uploadResponse.secure_url },
-                { new: true }
-            ).select('-password');
 
             res.json({
                 message: 'Avatar updated successfully',
@@ -225,25 +231,167 @@ class UserController {
     async updateInfo(req, res) {
         try {
             const userId = req.userId;
-            const { fullname, isMale, birthday } = req.body;
-
-            const user = await User.findOneAndUpdate(
-                { userId }, 
-                { 
-                    fullname, 
-                    isMale: isMale, 
-                    birthday 
-                }, 
-                { new: true }
-            ).select('-password');
+            const user = await User.findOne({ userId });
 
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            res.json(user);
+            const updateFields = {};
+            if (req.body.fullname !== undefined) updateFields.fullname = req.body.fullname;
+            if (req.body.isMale !== undefined) updateFields.isMale = req.body.isMale;
+            if (req.body.birthday !== undefined) updateFields.birthday = req.body.birthday;
+            //không có field nào để update thì bỏ
+            if (Object.keys(updateFields).length === 0) {
+                return res.status(400).json({ message: 'No fields to update' });
+            }
+
+            const updatedUser = await User.findOneAndUpdate(
+                { userId }, 
+                updateFields, 
+                { new: true }
+            ).select('-password');
+
+            if (!updatedUser) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            res.json({
+                message: 'User info updated successfully',
+                user: updatedUser
+            });
         }
         catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async updateAvatarMobile(req, res) {
+        try {
+            const { imageBase64 } = req.body;
+
+            if (!imageBase64) {
+                return res.status(400).json({ message: 'No image provided' });
+            }
+
+            if (!imageBase64.startsWith('data:image')) {
+                return res.status(400).json({ message: 'Invalid image format' });
+            }
+             
+            const userId = req.userId;
+            const user = await User.findOne({ userId }); 
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+                folder: 'avatars',
+                transformation: [
+                    { width: 500, height: 500, crop: 'fill' },
+                    { quality: 'auto' }
+                ]
+            });
+            
+            const updatedUser = await User.findOneAndUpdate(
+                { userId },
+                { urlavatar: uploadResponse.secure_url },
+                { new: true }
+            ).select('-password');
+
+            //xóa ảnh vừa tải nếu update lỗi
+            if (!updatedUser) {
+                await cloudinary.uploader.destroy(`avatars/${uploadResponse.public_id}`);
+                return res.status(500).json({ message: 'Failed to update user' });
+            }
+
+            // xóa cái cũ nếu tải oke
+            if (user.urlavatar && uploadResponse.secure_url) {
+                const publicId = user.urlavatar.split('/').pop().split('.')[0];
+                try {
+                    await cloudinary.uploader.destroy(`avatars/${publicId}`);
+                } catch (deleteError) {
+                    console.error('Error deleting old avatar:', deleteError);
+                }
+            }
+
+            res.json({
+                message: 'Avatar updated successfully',
+                user: updatedUser
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async updateInfoMobile(req, res) {
+        try {
+            const userId = req.userId;
+            const { fullname, isMale, birthday, imageBase64 } = req.body;
+            const user = await User.findOne({ userId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!imageBase64.startsWith('data:image')) {
+                return res.status(400).json({ message: 'Invalid image format' });
+            }
+
+            const updateFields = {};
+            if (fullname !== undefined) updateFields.fullname = fullname;
+            if (isMale !== undefined) updateFields.isMale = isMale;
+            if (birthday !== undefined) updateFields.birthday = birthday;
+
+            if (imageBase64) {
+                try {
+                    const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+                        folder: 'avatars',
+                        transformation: [
+                            { width: 500, height: 500, crop: 'fill' },
+                            { quality: 'auto' }
+                        ]
+                    });
+                    updateFields.urlavatar = uploadResponse.secure_url;
+
+                } catch (uploadError) {
+                    console.error('Avatar upload error:', uploadError);
+                    return res.status(500).json({ message: 'Failed to upload avatar' });
+                }
+            }
+
+            if (Object.keys(updateFields).length === 0) {
+                return res.status(400).json({ message: 'No fields to update' });
+            }
+
+            const updatedUser = await User.findOneAndUpdate(
+                { userId },
+                updateFields,
+                { new: true }
+            ).select('-password');
+            
+            if (!updatedUser) {
+                if (imageBase64) {
+                    await cloudinary.uploader.destroy(`avatars/${uploadResponse.public_id}`);
+                }
+                return res.status(404).json({ message: 'Failed to update user' });
+            }
+
+            if (user.urlavatar) {
+                const publicId = user.urlavatar.split('/').pop().split('.')[0];
+                try {
+                    await cloudinary.uploader.destroy(`avatars/${publicId}`);
+                } catch (deleteError) {
+                    console.error('Error deleting old avatar:', deleteError);
+                }
+            }
+            
+            res.json({
+                message: 'Profile updated successfully',
+                user: updatedUser
+            });
+        } catch (error) {
+            console.error('Update error:', error);
             res.status(500).json({ message: error.message });
         }
     }
