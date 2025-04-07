@@ -334,16 +334,15 @@ class UserController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            if (!imageBase64.startsWith('data:image')) {
-                return res.status(400).json({ message: 'Invalid image format' });
-            }
-
             const updateFields = {};
             if (fullname !== undefined) updateFields.fullname = fullname;
             if (isMale !== undefined) updateFields.isMale = isMale;
             if (birthday !== undefined) updateFields.birthday = birthday;
 
             if (imageBase64) {
+                if (!imageBase64.startsWith('data:image')) {
+                    return res.status(400).json({ message: 'Invalid image format' });
+                }
                 try {
                     const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
                         folder: 'avatars',
