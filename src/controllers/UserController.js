@@ -290,8 +290,15 @@ class UserController {
                 transformation: [
                     { width: 500, height: 500, crop: 'fill' },
                     { quality: 'auto' }
-                ]
+                ],
+                timestamp: Math.round(new Date().getTime() / 1000)
             });
+            
+            console.log('Cloudinary upload response:', uploadResponse);
+        
+            if (!uploadResponse || !uploadResponse.secure_url) {
+                throw new Error('Invalid upload response from Cloudinary');
+            }
             
             const updatedUser = await User.findOneAndUpdate(
                 { userId },
@@ -349,8 +356,16 @@ class UserController {
                         transformation: [
                             { width: 500, height: 500, crop: 'fill' },
                             { quality: 'auto' }
-                        ]
+                        ],
+                        timestamp: Math.round(new Date().getTime() / 1000)
                     });
+
+                    console.log('Cloudinary upload response:', uploadResponse);
+        
+                    if (!uploadResponse || !uploadResponse.secure_url) {
+                        throw new Error('Invalid upload response from Cloudinary');
+                    }
+
                     updateFields.urlavatar = uploadResponse.secure_url;
 
                 } catch (uploadError) {
