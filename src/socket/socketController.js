@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const userSockets = new Map();
 const userConversations = new Map();
 const qrLoginSessions = new Map();
@@ -29,14 +30,18 @@ class SocketController {
                 });
             });
 
-            socket.on('scanQrLogin', ({ qrToken, userId }) => {
+            socket.on('scanQrLogin', async ({ qrToken, userId }) => {
                 const session = qrLoginSessions.get(qrToken);
                 if (session) {
                     session.scannerUserId = userId;
                     session.scannerSocket = socket.id;
                     session.status = 'scanned';
+
+                    const user = await User.findOne({userId}).select('fullname urlavatar');
                     
                     this.io.to(session.initiatorSocket).emit('qrScanned', {
+                        fullname: user.fullname,
+                        urlavatar: user.urlavatar || null,
                         status: 'scanned',
                         timestamp: Date.now()
                     });
