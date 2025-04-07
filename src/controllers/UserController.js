@@ -290,15 +290,8 @@ class UserController {
                 transformation: [
                     { width: 500, height: 500, crop: 'fill' },
                     { quality: 'auto' }
-                ],
-                timestamp: Math.round(new Date().getTime() / 1000)
+                ]
             });
-            
-            console.log('Cloudinary upload response:', uploadResponse);
-        
-            if (!uploadResponse || !uploadResponse.secure_url) {
-                throw new Error('Invalid upload response from Cloudinary');
-            }
             
             const updatedUser = await User.findOneAndUpdate(
                 { userId },
@@ -334,7 +327,7 @@ class UserController {
     async updateInfoMobile(req, res) {
         try {
             const userId = req.userId;
-            const { fullname, isMale, birthday, imageBase64 } = req.body;
+            const { fullname, isMale, birthday, urlavatar } = req.body;
             const user = await User.findOne({ userId });
 
             if (!user) {
@@ -345,34 +338,7 @@ class UserController {
             if (fullname !== undefined) updateFields.fullname = fullname;
             if (isMale !== undefined) updateFields.isMale = isMale;
             if (birthday !== undefined) updateFields.birthday = birthday;
-
-            if (imageBase64) {
-                if (!imageBase64.startsWith('data:image')) {
-                    return res.status(400).json({ message: 'Invalid image format' });
-                }
-                try {
-                    const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
-                        folder: 'avatars',
-                        transformation: [
-                            { width: 500, height: 500, crop: 'fill' },
-                            { quality: 'auto' }
-                        ],
-                        timestamp: Math.round(new Date().getTime() / 1000)
-                    });
-
-                    console.log('Cloudinary upload response:', uploadResponse);
-        
-                    if (!uploadResponse || !uploadResponse.secure_url) {
-                        throw new Error('Invalid upload response from Cloudinary');
-                    }
-
-                    updateFields.urlavatar = uploadResponse.secure_url;
-
-                } catch (uploadError) {
-                    console.error('Avatar upload error:', uploadError);
-                    return res.status(500).json({ message: 'Failed to upload avatar' });
-                }
-            }
+            if (urlavatar!== undefined) updateFields.urlavatar = urlavatar;
 
             if (Object.keys(updateFields).length === 0) {
                 return res.status(400).json({ message: 'No fields to update' });
@@ -384,13 +350,6 @@ class UserController {
                 { new: true }
             ).select('-password');
             
-            if (!updatedUser) {
-                if (imageBase64) {
-                    await cloudinary.uploader.destroy(`avatars/${uploadResponse.public_id}`);
-                }
-                return res.status(404).json({ message: 'Failed to update user' });
-            }
-
             if (user.urlavatar) {
                 const publicId = user.urlavatar.split('/').pop().split('.')[0];
                 try {
