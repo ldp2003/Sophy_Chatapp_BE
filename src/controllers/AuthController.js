@@ -8,18 +8,18 @@ const uuid = require('uuid');
 const rateLimit = require('express-rate-limit');
 const twilio = require('twilio');
 const { v4: uuidv4 } = require('uuid');
-const SpeedSMS = require('../utils/speedsms');
-const speedsms = new SpeedSMS(process.env.SPEEDSMS_API_KEY);
-const SMSService = require('../utils/tingtingSMS');
-const smsService = new SMSService(
-    process.env.EASYSEND_USERNAME,
-    process.env.EASYSEND_PASSWORD
-);
-const InfobipSMS = require('../utils/infobipSMS');
-const infobipSMS = new InfobipSMS(
-    '21c9830de8d5d2989b34b5c79b417605-82f89bc0-6289-4c1b-a27e-c1e39821e1e7',
-    'd9zz5r.api.infobip.com'
-);
+// const SpeedSMS = require('../utils/speedsms');
+// const speedsms = new SpeedSMS(process.env.SPEEDSMS_API_KEY);
+// const SMSService = require('../utils/tingtingSMS');
+// const smsService = new SMSService(
+//     process.env.EASYSEND_USERNAME,
+//     process.env.EASYSEND_PASSWORD
+// );
+// const InfobipSMS = require('../utils/infobipSMS');
+// const infobipSMS = new InfobipSMS(
+//     '21c9830de8d5d2989b34b5c79b417605-82f89bc0-6289-4c1b-a27e-c1e39821e1e7',
+//     'd9zz5r.api.infobip.com'
+// );
 
 
 const otpCache = new Map();
@@ -131,17 +131,17 @@ class AuthController {
                 expiresAt: Date.now() + 5 * 60 * 1000 //5 phút hết hạn
             });
 
-            // try {
-            //     console.log(`Testing OTP for ${phone}: ${otp}`);
-            //     return res.json({
-            //         message: 'Verification code generated.',
-            //         otpId: otpId,
-            //         otp: otp
-            //     });
-            // } catch (smsError) {
-            //     console.error('SMS sending error:', smsError);
-            //     return res.status(500).json({ message: 'Failed to send verification code' });
-            // }
+            try {
+                console.log(`Testing OTP for ${phone}: ${otp}`);
+                return res.json({
+                    message: 'Verification code generated.',
+                    otpId: otpId,
+                    otp: otp
+                });
+            } catch (smsError) {
+                console.error('SMS sending error:', smsError);
+                return res.status(500).json({ message: 'Failed to send verification code' });
+            }
             
             // try {
             //     console.log('Twilio Config:', {
@@ -204,16 +204,16 @@ class AuthController {
             //     return res.status(500).json({ message: 'Failed to send verification code' });
             // }
 
-            try {
-                const response = await infobipSMS.sendSMS(
-                    '0763934458',
-                    'Your verification code is: 123456',
-                    '447491163443'
-                );
-                console.log('SMS sent successfully:', response);
-            } catch (error) {
-                console.error('Failed to send SMS:', error);
-            }
+            // try {
+            //     const response = await infobipSMS.sendSMS(
+            //         '0763934458',
+            //         'Your verification code is: 123456',
+            //         '447491163443'
+            //     );
+            //     console.log('SMS sent successfully:', response);
+            // } catch (error) {
+            //     console.error('Failed to send SMS:', error);
+            // }
         }
         catch (error) {
             res.status(500).json({ message: error.message });
