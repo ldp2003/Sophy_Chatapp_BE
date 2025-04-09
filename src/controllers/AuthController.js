@@ -1,12 +1,26 @@
+require('dotenv').config();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const Token = require('../models/Token');
+const QrLogin = require('../models/QrLogin');
 const cache = require('../utils/cache');
 const uuid = require('uuid');
 const rateLimit = require('express-rate-limit');
 const twilio = require('twilio');
 const { v4: uuidv4 } = require('uuid');
+const SpeedSMS = require('../utils/speedsms');
+const speedsms = new SpeedSMS(process.env.SPEEDSMS_API_KEY);
+const SMSService = require('../utils/tingtingSMS');
+const smsService = new SMSService(
+    process.env.EASYSEND_USERNAME,
+    process.env.EASYSEND_PASSWORD
+);
+const InfobipSMS = require('../utils/infobipSMS');
+const infobipSMS = new InfobipSMS(
+    '21c9830de8d5d2989b34b5c79b417605-82f89bc0-6289-4c1b-a27e-c1e39821e1e7',
+    'd9zz5r.api.infobip.com'
+);
+
 
 const otpCache = new Map();
 const verificationAttempts = new Map();
@@ -117,17 +131,17 @@ class AuthController {
                 expiresAt: Date.now() + 5 * 60 * 1000 //5 phút hết hạn
             });
 
-            try {
-                console.log(`Testing OTP for ${phone}: ${otp}`);
-                return res.json({
-                    message: 'Verification code generated.',
-                    otpId: otpId,
-                    otp: otp
-                });
-            } catch (smsError) {
-                console.error('SMS sending error:', smsError);
-                return res.status(500).json({ message: 'Failed to send verification code' });
-            }
+            // try {
+            //     console.log(`Testing OTP for ${phone}: ${otp}`);
+            //     return res.json({
+            //         message: 'Verification code generated.',
+            //         otpId: otpId,
+            //         otp: otp
+            //     });
+            // } catch (smsError) {
+            //     console.error('SMS sending error:', smsError);
+            //     return res.status(500).json({ message: 'Failed to send verification code' });
+            // }
             
             // try {
             //     console.log('Twilio Config:', {
@@ -152,6 +166,54 @@ class AuthController {
             //     console.error('SMS sending error:', smsError);
             //     res.status(500).json({ message: 'Failed to send verification code' });
             // }
+
+            // try{
+            //     const user = await speedsms.getUserInfo();
+            //     console.log('User Info:', user);
+            // } catch (error) {
+            //     console.error('Error fetching user info:', error); 
+            //     return res.status(500).json({ message: 'Failed to send verification code' });
+            // }
+            // try {
+            //     const message = `Your verification code to register Sophy is: ${otp}`;
+            //     const result = await speedsms.sendSMS(phone, message);
+                
+            //     if (result.status === 'success') {
+            //         res.json({ 
+            //             message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
+            //             otpId: otpId
+            //         });
+            //     } else {
+            //         throw new Error('SMS sending failed: ' + result.message);
+            //     }
+            // } catch (smsError) {
+            //     console.error('SMS sending error:', smsError);
+            //     res.status(500).json({ message: 'Failed to send verification code' });
+            // }
+            
+            // try {
+            //     const message = `Your verification code to register Sophy is: ${otp}`;
+            //     await smsService.sendSMS(phone, message);
+                
+            //     return res.json({
+            //         message: 'Verification code sent to ' + phone,
+            //         otpId: otpId
+            //     });
+            // } catch (smsError) {
+            //     console.error('SMS sending error:', smsError);
+            //     return res.status(500).json({ message: 'Failed to send verification code' });
+            // }
+
+            try {
+                const response = await infobipSMS.sendSMS(
+                    '0763934458',
+                    'Your verification code is: 123456',
+                    '447491163443'
+                );
+                console.log('SMS sent successfully:', response);
+            } catch (error) {
+                console.error('Failed to send SMS:', error);
+            }
         }
         catch (error) {
             res.status(500).json({ message: error.message });
@@ -199,11 +261,11 @@ class AuthController {
         try {
             const qrToken = uuidv4();
 
-            qrLoginCache.set(qrToken, {
+            await QrLogin.create({
+                qrToken,
                 status: 'pending',
-                createdAt: Date.now(),
-                expiresAt: Date.now() + 5 * 60 * 1000, // 5 phút
-                userId: null
+                createdAt: new Date(),
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 phút
             });
             
             res.json({
@@ -223,20 +285,22 @@ class AuthController {
             const userId = req.userId; 
             
             // Kiểm tra có tồn tại không
-            const tokenData = qrLoginCache.get(qrToken);
+            const tokenData = await QrLogin.findOne({ 
+                qrToken,
+                expiresAt: { $gt: new Date() }
+            });
+            
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
             }
             
-            // Kiểm tra hạn
-            if (Date.now() > tokenData.expiresAt) {
-                qrLoginCache.delete(qrToken);
-                return res.status(400).json({ message: 'QR token đã hết hạn' });
-            }
-            
-            tokenData.status = 'scanned';
-            tokenData.userId = userId;
-            qrLoginCache.set(qrToken, tokenData);
+            await QrLogin.updateOne(
+                { qrToken },
+                { 
+                    status: 'scanned',
+                    userId: userId
+                }
+            );
             
             res.json({ message: 'QR token xác thực thành công' });
             
@@ -250,14 +314,13 @@ class AuthController {
             const { qrToken } = req.body;
             const userId = req.userId;
             
-            const tokenData = qrLoginCache.get(qrToken);
+            const tokenData = await QrLogin.findOne({ 
+                qrToken,
+                expiresAt: { $gt: new Date() }
+            });
+
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
-            }
-            
-            if (Date.now() > tokenData.expiresAt) {
-                qrLoginCache.delete(qrToken);
-                return res.status(400).json({ message: 'QR token đã hết hạn' });
             }
             
             if (tokenData.status !== 'scanned') {
@@ -268,8 +331,14 @@ class AuthController {
                 return res.status(403).json({ message: 'Không có quyền xác nhận QR token này' });
             }
             
-            tokenData.status = 'authenticated';
-            qrLoginCache.set(qrToken, tokenData);
+            
+            await QrLogin.updateOne(
+                { qrToken },
+                {
+                    status:'authenticated',
+                    userId: userId
+                } 
+            )
             
             res.json({ message: 'QR login xác thực thành công' });
             
@@ -282,15 +351,13 @@ class AuthController {
         try {
             const { qrToken } = req.params;
             
-            const tokenData = qrLoginCache.get(qrToken);
+            const tokenData = await QrLogin.findOne({ 
+                qrToken,
+                expiresAt: { $gt: new Date() }
+            });
+
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
-            }
-            
-
-            if (Date.now() > tokenData.expiresAt) {
-                qrLoginCache.delete(qrToken);
-                return res.status(400).json({ message: 'QR token đã hết hạn' });
             }
             
             // Nếu token đã được xác thực thì làm tạo jwt để xác thực rồi đăng nhập giống login
@@ -304,7 +371,7 @@ class AuthController {
                 const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
                 const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
                 
-                qrLoginCache.delete(qrToken);
+                await QrLogin.deleteOne({ qrToken });
                 
                 return res.json({
                     status: tokenData.status,
