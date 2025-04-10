@@ -31,24 +31,27 @@ const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_A
 const checkPhoneLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 phút
     max: 5, // tối đa 5 lần request trong 15 phút
-    message: { message: 'Too many verification attempts, please try again later' }, 
+    message: { message: 'Request too many verification code, please try again later' }, 
+    keyGenerator: (req) => req.ip // xài IP làm key
 })
 const phoneVerificationLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 15,
     message: { message: 'Too many verification attempts, please try again later' },
-    keyGenerator: (req) => req.ip // xài IP làm key
+    keyGenerator: (req) => req.ip
 });
 
 const forgotPasswordLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
     max: 5, 
-    message: { message: 'Too many verification attempts, please try again later' }, 
+    message: { message: 'Request too many verification code, please try again later' }, 
+    keyGenerator: (req) => req.ip
 })
 const forgotPasswordVerificationLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: 15,
     message: { message: 'Too many verification attempts, please try again later' }, 
+    keyGenerator: (req) => req.ip
 })
 
 require('dotenv').config();
