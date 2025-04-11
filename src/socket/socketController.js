@@ -6,20 +6,89 @@ const qrLoginSessions = new Map();
 class SocketController {
     constructor(io) {
         this.io = io;
+        this.activeConnections = new Set();
         this.setupSocketEvents();
     }
 
     setupSocketEvents() {
         this.io.on('connection', (socket) => {
-            console.log('New client connected:', socket.id);
+            this.activeConnections.add(socket.id);
+            console.log('New client connected:', {
+                socketId: socket.id,
+                totalConnections: this.activeConnections.size
+            });
+
+            socket.isReconnecting = false;
+            socket.lastDisconnectTime = null;
 
             socket.on('authenticate', (userId) => {
+                const prevSocketId = userSockets.get(userId);
+                const prevSocket = prevSocketId ? this.io.sockets.sockets.get(prevSocketId) : null;
+
+                // Check if this is a reconnection within 5 seconds
+                if (prevSocket?.lastDisconnectTime) {
+                    const timeSinceDisconnect = Date.now() - prevSocket.lastDisconnectTime;
+                    socket.isReconnecting = timeSinceDisconnect < 5000;
+                }
+
+                if (prevSocket && prevSocket.id !== socket.id) {
+                    if (prevSocket.qrToken && qrLoginSessions.has(prevSocket.qrToken)) {
+                        socket.qrToken = prevSocket.qrToken;
+                        const session = qrLoginSessions.get(prevSocket.qrToken);
+                        session.initiatorSocket = socket.id;
+                        qrLoginSessions.set(socket.qrToken, session);
+                    }
+
+                    if (socket.isReconnecting && userConversations.has(userId)) {
+                        const conversations = userConversations.get(userId);
+                        conversations.forEach(convId => {
+                            socket.join(convId);
+                        });
+                    }
+
+                    prevSocket.disconnect(true);
+                }
+
                 userSockets.set(userId, socket.id);
                 socket.userId = userId;
-                
+
                 if (!userConversations.has(userId)) {
                     userConversations.set(userId, new Set());
                 }
+
+                console.log('User authenticated:', {
+                    userId,
+                    socketId: socket.id,
+                    isReconnection: socket.isReconnecting,
+                    hasQrSession: !!socket.qrToken
+                });
+            });
+
+            socket.on('disconnect', () => {
+                socket.lastDisconnectTime = Date.now();
+                this.activeConnections.delete(socket.id);
+                const userId = socket.userId;
+                if (!socket.isIntentionalDisconnect) {
+                    setTimeout(() => {
+                        if (userSockets.get(userId) === socket.id) {
+                            userSockets.delete(userId);
+                            userConversations.delete(userId);
+                            if (socket.qrToken) {
+                                qrLoginSessions.delete(socket.qrToken);
+                            }
+                        }
+                    }, 5000); //chờ 5 giây để xóa
+                } else {
+                    userSockets.delete(userId);
+                    userConversations.delete(userId);
+                }
+
+                console.log('Client disconnected:', {
+                    socketId: socket.id,
+                    userId: userId || 'Not authenticated',
+                    isIntentional: socket.isIntentionalDisconnect || false,
+                    remainingConnections: this.activeConnections.size
+                });
             });
 
             socket.on('initQrLogin', (qrToken) => {
@@ -37,8 +106,8 @@ class SocketController {
                     session.scannerSocket = socket.id;
                     session.status = 'scanned';
 
-                    const user = await User.findOne({userId}).select('fullname urlavatar');
-                    
+                    const user = await User.findOne({ userId }).select('fullname urlavatar');
+
                     this.io.to(session.initiatorSocket).emit('qrScanned', {
                         fullname: user.fullname,
                         urlavatar: user.urlavatar || null,
@@ -47,17 +116,17 @@ class SocketController {
                     });
                 }
             });
-
-            socket.on('confirmQrLogin', ({ qrToken, confirmed, token }) => {
+            socket.on('confirmQrLogin', ({ qrToken, confirmed }) => {
+                console.log('got qrToken: ', qrToken);
                 const session = qrLoginSessions.get(qrToken);
+                console.log('got session:', session);
                 if (session) {
                     if (confirmed) {
                         session.status = 'confirmed';
-                        session.token = token;
                         this.io.to(session.initiatorSocket).emit('qrLoginConfirmed', {
                             status: 'confirmed',
                             userId: session.scannerUserId,
-                            token: token
+                            token: qrToken
                         });
                     } else {
                         session.status = 'rejected';
@@ -83,29 +152,36 @@ class SocketController {
                 });
             });
 
-            
+
             socket.on('typing', ({ conversationId, userId, fullname }) => {
                 this.emitUserTyping(conversationId, userId, fullname);
             });
 
-            socket.on('disconnect', () => {
-                const userId = socket.userId;
-                if (userId) {
-                    userSockets.delete(userId);
-                    userConversations.delete(userId);
-                }
+        });
+    }
 
-                if (socket.qrToken) {
-                    qrLoginSessions.delete(socket.qrToken);
-                }
-                console.log('Client disconnected:', socket.id);
+    handleReconnect(socket, userId) {
+        // Restore user's socket mapping
+        userSockets.set(userId, socket.id);
+
+        // Restore conversations if they exist
+        if (userConversations.has(userId)) {
+            const conversations = userConversations.get(userId);
+            conversations.forEach(convId => {
+                socket.join(convId);
             });
+        }
+
+        console.log('Restored connection state for user:', {
+            userId: userId,
+            socketId: socket.id,
+            hasConversations: userConversations.has(userId)
         });
     }
 
     emitNewMessage(conversationId, message, sender) {
-        this.io.to(conversationId).emit('newMessage', { 
-            conversationId, 
+        this.io.to(conversationId).emit('newMessage', {
+            conversationId,
             message,
             sender: {
                 userId: sender.userId,

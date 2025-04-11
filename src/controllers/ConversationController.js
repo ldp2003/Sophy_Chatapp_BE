@@ -13,7 +13,6 @@ class ConversationController {
     async getConversations(req, res) {
         try {
             const userId = req.userId;
-            console.log('userId: ' + userId);
 
             const conversations = await Conversation.find({
                 $or: [
@@ -24,8 +23,6 @@ class ConversationController {
             })
                 .sort({ lastChange: -1 })
                 .populate('lastMessage');
-
-            console.log('Found conversations:', JSON.stringify(conversations, null, 2));
 
             res.json(conversations);
         } catch (error) {

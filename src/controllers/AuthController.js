@@ -54,8 +54,6 @@ const forgotPasswordVerificationLimiter = rateLimit({
     keyGenerator: (req) => req.ip
 })
 
-require('dotenv').config();
-
 class AuthController {
     constructor() {
         this.checkPhoneLimiter = checkPhoneLimiter;
@@ -321,7 +319,7 @@ class AuthController {
                 qrToken,
                 expiresAt: { $gt: new Date() }
             });
-
+            
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
             }

@@ -8,7 +8,11 @@ const initializeSocket = (server) => {
         cors: {
             origin: "*",
             methods: ["GET", "POST"]
-        }
+        },
+        connectionStateRecovery: {
+            maxDisconnectionDuration: 2 * 60 * 1000,
+            skipMiddlewares: true
+        },
     });
 
     socketController = new SocketController(io);
