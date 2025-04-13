@@ -64,8 +64,8 @@ class ConversationController {
                 creatorId: sender.userId,
                 receiverId: receiverId,
                 isGroup: false,
-                lastChange: new Date(),
-                createdAt: new Date()
+                lastChange: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
             });
 
             res.status(201).json(conversation);
@@ -101,8 +101,8 @@ class ConversationController {
                     ownerId: creatorId,
                     coOwnerIds: [],
                 },
-                lastChange: new Date(),
-                createdAt: new Date()
+                lastChange: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
             });
 
             res.status(201).json(conversation);

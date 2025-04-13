@@ -83,6 +83,11 @@ class MessageDetailController {
                 lastChange: message.createdAt
             });
 
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActiveTime: new Date() }
+            );
+
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
@@ -138,7 +143,7 @@ class MessageDetailController {
                     $push: {
                         readBy: {
                             userId: userId,
-                            readAt: new Date()
+                            readAt: new Date().toISOString()
                         }
                     }
                 }

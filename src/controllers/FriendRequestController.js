@@ -79,8 +79,8 @@ class FriendRequestController {
                 receiverId,
                 message,
                 status: 'pending',
-                createdAt: new Date(),
-                updatedAt: new Date()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             });
 
             res.json({ message: 'Friend request sent successfully' });
@@ -133,7 +133,7 @@ class FriendRequestController {
             await sender.save();
             await receiver.save();
 
-            await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'accepted', updatedAt: new Date() });
+            await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'accepted', updatedAt: new Date().toISOString() });
 
             res.json({ message: 'Friend request accepted successfully' });
         } catch (error) {
@@ -154,7 +154,7 @@ class FriendRequestController {
                 return res.status(403).json({ message: 'You are not authorized to reject this friend request' });  
             } 
 
-            await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'rejected', updatedAt: new Date() });
+            await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'rejected', updatedAt: new Date().toISOString() });
 
             res.json({ message: 'Friend request rejected successfully' });
         } catch (error) {

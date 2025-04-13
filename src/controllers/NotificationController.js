@@ -12,7 +12,7 @@ class NotificationController {
                 conversationId,
                 actorId,
                 targetIds,
-                createdAt: new Date(),
+                createdAt: new Date().toISOString(),
                 content
             });
 
