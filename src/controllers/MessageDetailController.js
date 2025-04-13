@@ -147,9 +147,7 @@ class MessageDetailController {
             //     messages[messages.length - 1].createdAt :
             //     null;
             const nextCursor = messages.length === limit
-                ? direction === 'before'
-                    ? messages[messages.length - 1].createdAt
-                    : messages[0].createdAt
+                ? messages[messages.length - 1].createdAt
                 : null;
 
             await MessageDetail.updateMany(
