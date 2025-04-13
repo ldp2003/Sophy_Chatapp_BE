@@ -103,7 +103,8 @@ class MessageDetailController {
     async getMessages(req, res) {
         try {
             const { conversationId } = req.params;
-            const { lastMessageTime, limit = 20 } = req.query;
+            // const { lastMessageTime, limit = 20 } = req.query;
+            const { lastMessageTime, direction = 'before', limit = 20 } = req.query;
             const userId = req.userId;
 
             const conversation = await Conversation.find({
@@ -118,20 +119,126 @@ class MessageDetailController {
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
+
+            // const query = { conversationId };
+            // if (lastMessageTime) {
+            //     query.createdAt = { $lt: new Date(lastMessageTime).toISOString() };
+            // }
             const query = { conversationId };
             if (lastMessageTime) {
-                query.createdAt = { $lt: new Date(lastMessageTime).toISOString() };
+                // Handle both directions of message loading
+                query.createdAt = direction === 'before'
+                    ? { $lt: lastMessageTime }
+                    : { $gt: lastMessageTime };
             }
 
+            // const messages = await MessageDetail.find(query)
+            //     .sort({ createdAt: -1 })
+            //     .limit(limit)
+            //     .lean();
             const messages = await MessageDetail.find(query)
-                .sort({ createdAt: -1 })
+                .sort({ createdAt: direction === 'before' ? -1 : 1 })
                 .limit(limit)
                 .lean();
 
+
             // Lấy timestamp của tin nhắn cuối cùng để dùng cho lần load tiếp theo
-            const nextCursor = messages.length === limit ?
-                messages[messages.length - 1].createdAt :
-                null;
+            // const nextCursor = messages.length === limit ?
+            //     messages[messages.length - 1].createdAt :
+            //     null;
+            const nextCursor = messages.length === limit
+                ? direction === 'before'
+                    ? messages[messages.length - 1].createdAt
+                    : messages[0].createdAt
+                : null;
+
+            await MessageDetail.updateMany(
+                {
+                    conversationId,
+                    senderId: { $ne: userId },
+                    'readBy.userId': { $ne: userId }
+                },
+                {
+                    $push: {
+                        readBy: {
+                            userId: userId,
+                            readAt: new Date().toISOString()
+                        }
+                    }
+                }
+            );
+
+            // res.json({
+            //     messages,
+            //     nextCursor,
+            //     hasMore: !!nextCursor
+            // });
+            res.json({
+                messages: direction === 'before' ? messages : messages.reverse(),
+                nextCursor,
+                hasMore: !!nextCursor,
+                direction
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async getMessageContext(req, res) {
+        try {
+            const { conversationId } = req.params;
+            const { messageId, limit = 20 } = req.query;
+            const userId = req.userId;
+
+            const conversation = await Conversation.find({
+                conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            const targetMessage = await MessageDetail.findOne({
+                messageDetailId: messageId,
+                conversationId
+            });
+
+            if (!targetMessage) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            const halfLimit = Math.floor(limit / 2);
+
+            const beforeMessages = await MessageDetail.find({
+                conversationId,
+                createdAt: { $lt: targetMessage.createdAt }
+            })
+                .sort({ createdAt: -1 })
+                .limit(halfLimit)
+                .lean();
+
+            const afterMessages = await MessageDetail.find({
+                conversationId,
+                createdAt: { $gt: targetMessage.createdAt }
+            })
+                .sort({ createdAt: 1 })
+                .limit(halfLimit)
+                .lean();
+
+            const hasMoreBefore = await MessageDetail.findOne({
+                conversationId,
+                createdAt: { $lt: beforeMessages[beforeMessages.length - 1]?.createdAt || targetMessage.createdAt }
+            });
+
+            const hasMoreAfter = await MessageDetail.findOne({
+                conversationId,
+                createdAt: { $gt: afterMessages[afterMessages.length - 1]?.createdAt || targetMessage.createdAt }
+            });
 
             await MessageDetail.updateMany(
                 {
@@ -150,9 +257,11 @@ class MessageDetailController {
             );
 
             res.json({
-                messages,
-                nextCursor,
-                hasMore: !!nextCursor
+                messages: [...beforeMessages.reverse(), targetMessage, ...afterMessages],
+                beforeCursor: beforeMessages.length > 0 ? beforeMessages[beforeMessages.length - 1].createdAt : null,
+                afterCursor: afterMessages.length > 0 ? afterMessages[afterMessages.length - 1].createdAt : null,
+                hasMoreBefore: !!hasMoreBefore,
+                hasMoreAfter: !!hasMoreAfter
             });
         } catch (error) {
             res.status(500).json({ message: error.message });
