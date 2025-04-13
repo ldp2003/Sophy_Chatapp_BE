@@ -9,12 +9,12 @@ class MessageDetailController {
     async sendMessage(req, res) {
         try {
             const { conversationId, content, type = 'text', attachments = [] } = req.body;
-            console.log('Received data:', { conversationId, content, type, attachments });
             const senderId = req.userId;
-            console.log('senderId:', senderId);
             const sender = await User.findOne({ userId: senderId });
-            console.log('sender:', sender);
-            console.log('sender.userId:', sender.userId);
+
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
 
             const conversation = await Conversation.findOne({
                 conversationId,
@@ -68,7 +68,7 @@ class MessageDetailController {
                 type,
                 content,
                 attachments,
-                createdAt: new Date(),
+                createdAt: new Date().toISOString(),
                 sendStatus: 'sent'
             });
 
@@ -82,7 +82,7 @@ class MessageDetailController {
                 },
                 lastChange: message.createdAt
             });
-            
+
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
@@ -98,13 +98,8 @@ class MessageDetailController {
     async getMessages(req, res) {
         try {
             const { conversationId } = req.params;
-            const { page = 1, limit = 20 } = req.query;
+            const { lastMessageTime, limit = 20 } = req.query;
             const userId = req.userId;
-
-            console.log('Debug:', {
-                conversationId,
-                userId
-            });
 
             const conversation = await Conversation.find({
                 conversationId: conversationId,
@@ -118,13 +113,20 @@ class MessageDetailController {
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
+            const query = { conversationId };
+            if (lastMessageTime) {
+                query.createdAt = { $lt: new Date(lastMessageTime).toISOString() };
+            }
 
-            console.log('found:' + conversation);
-
-            const messages = await MessageDetail.find({ conversationId })
+            const messages = await MessageDetail.find(query)
                 .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit);
+                .limit(limit)
+                .lean();
+
+            // Lấy timestamp của tin nhắn cuối cùng để dùng cho lần load tiếp theo
+            const nextCursor = messages.length === limit ?
+                messages[messages.length - 1].createdAt :
+                null;
 
             await MessageDetail.updateMany(
                 {
@@ -136,13 +138,17 @@ class MessageDetailController {
                     $push: {
                         readBy: {
                             userId: userId,
-                            readAt: new Date().toISOString()
+                            readAt: new Date()
                         }
                     }
                 }
             );
 
-            res.json(messages);
+            res.json({
+                messages,
+                nextCursor,
+                hasMore: !!nextCursor
+            });
         } catch (error) {
             res.status(500).json({ message: error.message });
         }

@@ -23,7 +23,7 @@ const schema = new mongoose.Schema({
         type: String,
         default: null
     },
-    background:{
+    background: {
         type: String,
         default: null
     },
@@ -41,7 +41,7 @@ const schema = new mongoose.Schema({
     },
     blockedBy: {
         type: Array,
-        schema: [String],  
+        schema: [String],
         default: []
     },
     isDeleted: {
@@ -138,12 +138,12 @@ const schema = new mongoose.Schema({
     },
     createdAt: {
         type: String,
-        default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
+        default: () => new Date().toISOString()
     },
 
     lastChange: {
         type: String,
-        default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
+        default: () => new Date().toISOString()
     }
 });
 

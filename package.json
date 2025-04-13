@@ -17,6 +17,7 @@
     "dynamoose": "^4.0.0",
     "express": "^4.18.2",
     "express-rate-limit": "^7.5.0",
+    "follow-redirects": "^1.15.9",
     "jsonwebtoken": "^9.0.2",
     "moment-timezone": "^0.5.45",
     "mongoose": "^8.12.1",

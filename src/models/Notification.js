@@ -24,7 +24,7 @@ const schema = new mongoose.Schema({
     content: String,
     createdAt: {
         type: String,
-        default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS'),
+        default: () => new Date().toISOString()
     },
     readBy: {
         type: Array,
