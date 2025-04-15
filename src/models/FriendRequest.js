@@ -37,6 +37,11 @@ const schema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  deletionDate: {
+    type: Date,
+    default: null,
+    index: { expireAfterSeconds: 604800 } // 7 days in seconds (7 * 24 * 60 * 60)
+}
 });
 
 //const FriendRequest = dynamoose.model("FriendRequest", schema);

@@ -130,6 +130,7 @@ class FriendRequestController {
             if (friendRequest.status!=='pending') {
                 return res.status(400).json({ message: 'This friend request has already been processed' });
             }
+            await FriendRequest.findOneAndDelete({ friendRequestId: requestId });
             res.json({message: 'Friend request retrieved successfully'});
         } catch (error) {
             res.status(500).json({ message: error.message }); 
@@ -200,7 +201,7 @@ class FriendRequestController {
                 return res.status(403).json({ message: 'You are not authorized to reject this friend request' });  
             } 
 
-            await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'rejected', updatedAt: new Date().toISOString() });
+            await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'rejected', updatedAt: new Date().toISOString(), deletionDate: new Date() });
 
             res.json({ message: 'Friend request rejected successfully' });
         } catch (error) {
