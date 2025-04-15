@@ -104,12 +104,12 @@ class MessageDetailController {
         }
     }
     async sendMessageWithImage(req, res) {
-        try{
+        try {
             if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
             }
 
-            const { conversationId, content, type = 'text-with-image'} = req.body;
+            const { conversationId, content, type = 'text-with-image' } = req.body;
             const senderId = req.userId;
             const sender = await User.findOne({ userId: senderId });
 
@@ -131,19 +131,19 @@ class MessageDetailController {
             }
 
             if (!conversation.isGroup) {
-                const receiver = conversation.creatorId === sender.userId?
+                const receiver = conversation.creatorId === sender.userId ?
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
                 if (receiver.blockedUsers?.includes(sender.userId)) {
-                    return res.status(403).json({ message: 'You have been blocked by the recipient' });  
-                } 
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
                         { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
                         { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
-                    ] 
+                    ]
                 })
 
                 if (!isFriend && receiver.settings?.block_msg_from_strangers) {
@@ -151,7 +151,7 @@ class MessageDetailController {
                 }
             }
 
-            
+
             const fileUri = parser.format(
                 req.file.originalname,
                 req.file.buffer
@@ -178,7 +178,7 @@ class MessageDetailController {
             const attachment = {
                 type: 'image',
                 url: uploadResponse.secure_url,
-                name: req.file.originalname,                
+                name: req.file.originalname,
                 size: uploadResponse.bytes,
             };
 
@@ -200,18 +200,18 @@ class MessageDetailController {
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
-                },   
+                },
                 lastChange: message.createdAt
             })
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() } 
+                { lastActiveTime: new Date() }
             )
 
             res.status(201).json(message);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -234,7 +234,7 @@ class MessageDetailController {
                 transformation: [
                     { quality: 'auto' },
                     { fetch_format: 'auto' }
-                ] 
+                ]
             })
 
             const attachment = {
@@ -242,7 +242,7 @@ class MessageDetailController {
                 type: type,
                 name: req.file.originalname,
                 size: uploadResponse.bytes,
- 
+
             }
 
             const last3Digits = sender.phone.slice(-3);
@@ -258,12 +258,12 @@ class MessageDetailController {
             const message = await MessageDetail.create({
                 messageDetailId: messageDetailId,
                 senderId: sender.userId,
-                conversationId,  
+                conversationId,
                 type,
                 content: null,
                 attachment,
                 createdAt: new Date().toISOString(),
-                sendStatus:'sent'
+                sendStatus: 'sent'
             });
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
@@ -274,17 +274,17 @@ class MessageDetailController {
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
-                lastChange: message.createdAt   
+                lastChange: message.createdAt
             })
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() } 
+                { lastActiveTime: new Date() }
             )
 
             res.status(201).json(message);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -297,7 +297,7 @@ class MessageDetailController {
             const { conversationId } = req.body;
             const fileType = req.file.mimetype;
             const type = fileType.startsWith('video/') ? 'video' : 'file';
-            
+
             const fileUri = parser.format(
                 req.file.originalname,
                 req.file.buffer
@@ -366,7 +366,7 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() } 
+                { lastActiveTime: new Date() }
             )
             res.status(201).json(message);
         } catch (error) {
@@ -451,6 +451,47 @@ class MessageDetailController {
                 hasMore: !!nextCursor,
                 direction
             });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async getAllMessages(req, res) {
+        try {
+            const conversationId = req.params;
+            const userId = req.userId;
+
+            const conversation = await Conversation.find({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            const messages = MessageDetail.find({ conversationId: conversationId }).sort({ createAt: -1 })
+
+            await MessageDetail.updateMany(
+                {
+                    conversationId,
+                    senderId: { $ne: userId },
+                    'readBy.userId': { $ne: userId }
+                },
+                {
+                    $push: {
+                        readBy: {
+                            userId: userId,
+                            readAt: new Date().toISOString()
+                        }
+                    }
+                }
+            );
+            res.json(messages);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
@@ -643,7 +684,7 @@ class MessageDetailController {
                         pinnedAt: new Date().toISOString(),
                         pinnedBy: userId
                     }
-                } 
+                }
             )
             await notificationController.createNotification(
                 'PIN_MESSAGE',
@@ -653,10 +694,10 @@ class MessageDetailController {
                 `${user.fullname} đã ghim tin nhắn ${message.content}`
             )
             res.json({ message: 'Message pinned successfully' });
-        } catch(error) {
+        } catch (error) {
             res.status(500).json({ message: error.message });
         }
-    } 
+    }
     async unpinMessage(req, res) {
         try {
             const userId = req.userId;
@@ -670,13 +711,13 @@ class MessageDetailController {
             const message = await MessageDetail.findOne({
                 messageDetailId: messageId
             });
-            
+
             if (!message) {
-                return res.status(404).json({ message: 'Message not found' }); 
+                return res.status(404).json({ message: 'Message not found' });
             }
 
             if (!message.isPinned) {
-                return res.status(400).json({ message: 'Message is not pinned' }); 
+                return res.status(400).json({ message: 'Message is not pinned' });
             }
 
             const conversation = await Conversation.findOne({
@@ -688,7 +729,7 @@ class MessageDetailController {
                 ]
             })
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' }); 
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
             await MessageDetail.updateOne(
@@ -696,7 +737,7 @@ class MessageDetailController {
                 {
                     isPinned: false,
                     pinnedAt: null
-                } 
+                }
             )
             await Conversation.updateOne(
                 { conversationId: message.conversationId },
@@ -711,18 +752,18 @@ class MessageDetailController {
             await notificationController.createNotification(
                 'UNPIN_MESSAGE',
                 message.conversationId,
-                userId, 
+                userId,
                 [],
                 `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`
             )
             res.json({ message: 'Message unpinned successfully' });
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async replyMessage(req, res) {
-        try{
+        try {
             const userId = req.userId;
             const messageId = req.params.messageId;
             const { content, type, attachments } = req.body;
@@ -806,7 +847,7 @@ class MessageDetailController {
 
             res.status(201).json(replyMessage);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 }

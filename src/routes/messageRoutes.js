@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 const messageDetailController = new MessageDetailController();
 
 router.get('/:conversationId', auth, messageDetailController.getMessages);
+router.get('/all/:conversationId', auth, messageDetailController.getAllMessages);
 router.post('/send', auth, messageDetailController.sendMessage);
 router.post('/send-with-image', auth, uploadImage.single('image'), messageDetailController.sendMessageWithImage);
 router.post('/send-image', auth, uploadImage.single('image') ,messageDetailController.sendMessageOnlyImage);
