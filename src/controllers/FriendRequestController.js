@@ -137,7 +137,7 @@ class FriendRequestController {
     }
     async acceptFriendRequest(req, res) {
         try {
-            const { friendRequestId } = req.body;
+            const  friendRequestId  = req.params.requestId;
             const userId = req.userId;
             const friendRequest = await FriendRequest.findOne({ friendRequestId });
             if (!friendRequest) {
@@ -189,7 +189,7 @@ class FriendRequestController {
 
     async rejectFriendRequest(req, res) {
         try {
-            const { friendRequestId } = req.body;
+            const  friendRequestId  = req.params.requestId;
             const userId = req.userId;
             const friendRequest = await FriendRequest.findOne({ friendRequestId });
             if (!friendRequest) {
