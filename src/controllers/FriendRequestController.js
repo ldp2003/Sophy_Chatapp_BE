@@ -7,10 +7,10 @@ class FriendRequestController {
             const userId = req.userId;
             const friendRequests = await FriendRequest.find({ senderId: userId, status: 'pending' })
                 .populate({
-                    path: 'senderId',
+                    path: 'receiverId',
                     select: 'userId fullname urlavatar',
                     model: 'User',
-                    localField: 'senderId',
+                    localField: 'receiverId',
                     foreignField: 'userId'
                 });
             res.json(friendRequests);
@@ -25,10 +25,10 @@ class FriendRequestController {
             const userId = req.userId;
             const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' })
                 .populate({
-                    path: 'receiverId',
+                    path: 'senderId',
                     select: 'userId fullname urlavatar',
                     model: 'User',
-                    localField: 'receiverId',
+                    localField: 'senderId',
                     foreignField: 'userId'
                 });
             res.json(friendRequests);
