@@ -458,10 +458,10 @@ class MessageDetailController {
 
     async getAllMessages(req, res) {
         try {
-            const conversationId = req.params;
+            const conversationId = req.params.conversationId;
             const userId = req.userId;
 
-            const conversation = await Conversation.find({
+            const conversation = await Conversation.findOne({
                 conversationId: conversationId,
                 $or: [
                     { creatorId: userId },
@@ -474,7 +474,7 @@ class MessageDetailController {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
-            const messages = MessageDetail.find({ conversationId: conversationId }).sort({ createAt: -1 })
+            const messages = await MessageDetail.find({ conversationId: conversationId }).sort({ createdAt: -1 });
 
             await MessageDetail.updateMany(
                 {
