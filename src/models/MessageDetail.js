@@ -16,7 +16,10 @@ const schema = new mongoose.Schema({
             rangeKey: 'dateTime'
         }
     },
-    type: String,
+    type: {
+        type: String,
+        enum: ['text', 'text-with-image', 'image', 'video', 'file']
+    },
     content: String,
     createdAt: {
         type: String,
