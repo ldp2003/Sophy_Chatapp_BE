@@ -71,7 +71,7 @@ const schema = new mongoose.Schema({
         }],
         default: []
     },
-    attachments: {
+    attachment: {
         type: Object,
         schema: {
             type: String,
