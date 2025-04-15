@@ -48,8 +48,29 @@ class NotificationController {
     async getConversationNotifications(req, res) {
         try {
             const { conversationId } = req.params;
-            const notifications = await Notification.find({ conversationId })
-                .sort({ createdAt: -1 });
+            const { oldestTime, newestTime } = req.query;
+            
+            const conversation = await Conversation.findOne({ conversationId });
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            
+            const query = { conversationId };
+
+            if (oldestTime || newestTime) {
+                query.createdAt = {};
+                if (oldestTime) {
+                    query.createdAt.$gte = oldestTime;
+                }
+                if (newestTime) {
+                    query.createdAt.$lte = newestTime;
+                }
+            }
+
+            const notifications = await Notification.find(query)
+                .sort({ createdAt: -1 })
+                .lean();
+
             res.json(notifications);
         } catch (error) {
             res.status(500).json({ message: error.message });
