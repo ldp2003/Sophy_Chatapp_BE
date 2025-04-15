@@ -362,8 +362,26 @@ class UserController {
     async blockUser(req, res) {
         try {
             const userId = req.userId;
-            const { blockedUserId } = req.body;
-            const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockedUserId } }, { new: true }).select('-password');
+            const blockingUserId = req.params.userId;
+            const currentUser = await User.findOne({ userId });
+            const blockingUser = await User.findOne({ userId: blockingUserId });
+            if (!currentUser) {
+                return res.status(404).json({ message: 'Current user not found' });
+            }
+
+            if (!blockingUser) {
+                return res.status(404).json({ message: 'Blocking user not found' });
+            }
+
+            if (currentUser.blockList.includes(blockingUserId)) {
+                return res.status(400).json({ message: 'User already blocked' }); 
+            }
+
+            if (currentUser.friendList.includes(blockingUserId)) {
+                await User.findOneAndUpdate({ userId }, { $pull: { friendList: blockingUserId } }, { new: true });
+            }
+            
+            const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockingUserId } }, { new: true }).select('-password');
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
@@ -377,7 +395,21 @@ class UserController {
     async unblockUser(req, res) {
         try {
             const userId = req.userId;
-            const { blockedUserId } = req.body;
+            const blockedUserId = req.params.userId;
+            const currentUser = await User.findOne({ userId });
+            const blockedUser = await User.findOne({ userId: blockingUserId });
+            if (!currentUser) {
+                return res.status(404).json({ message: 'Current user not found' });
+            }
+
+            if (!blockedUser) {
+                return res.status(404).json({ message: 'Blocking user not found' });
+            }
+
+            if (!currentUser.blockList.includes(blockedUserId)) {
+                return res.status(400).json({ message: 'User is not blocked' });  
+            }
+
             const user = await User.findOneAndUpdate({ userId }, { $pull: { blockList: blockedUserId } }, { new: true }).select('-password');
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });

@@ -19,7 +19,7 @@ router.put('/mobile/update-info', auth, userController.updateInfoMobile.bind(use
 router.get('/friends', auth, userController.getFriends.bind(userController));
 router.get('/get-profile/:userId', auth, userController.getProfileById.bind(userController));
 router.put('/block/:userId', auth, userController.blockUser.bind(userController));
-router.put('/unblock/:user:Id', auth, userController.unblockUser.bind(userController));
+router.put('/unblock/:userId', auth, userController.unblockUser.bind(userController));
 router.get('/blocked', auth, userController.getBlockedUsers.bind(userController));
 router.post('/friend-requests/send-request/:userId', auth, friendRequestController.sendFriendRequest.bind(friendRequestController));
 router.get('/friend-requests-sent', auth, friendRequestController.getFriendRequestsSent.bind(friendRequestController));
