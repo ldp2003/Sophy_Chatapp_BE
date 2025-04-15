@@ -8,7 +8,7 @@ class FriendRequestController {
             const friendRequests = await FriendRequest.find({ senderId: userId, status: 'pending' })
                 .populate({
                     path: 'receiverId',
-                    select: 'userId fullname urlavatar',
+                    select: 'userId fullname urlavatar isMale birthday phone',
                     model: 'User',
                     localField: 'receiverId',
                     foreignField: 'userId'
@@ -26,7 +26,7 @@ class FriendRequestController {
             const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' })
                 .populate({
                     path: 'senderId',
-                    select: 'userId fullname urlavatar',
+                    select: 'userId fullname urlavatar isMale birthday phone',
                     model: 'User',
                     localField: 'senderId',
                     foreignField: 'userId'
