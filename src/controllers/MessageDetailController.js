@@ -224,6 +224,13 @@ class MessageDetailController {
             const { conversationId } = req.body;
             const type = 'image';
 
+            const userId = req.userId;
+            const sender = await User.findOne({ userId: userId });
+
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
+
             const fileUri = parser.format(
                 req.file.originalname,
                 req.file.buffer
@@ -295,6 +302,13 @@ class MessageDetailController {
             }
 
             const { conversationId } = req.body;
+            const userId = req.userId;
+            const sender = await User.findOne({ userId: userId });
+
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
+
             const fileType = req.file.mimetype;
             const type = fileType.startsWith('video/') ? 'video' : 'file';
 
