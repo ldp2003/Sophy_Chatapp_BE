@@ -88,6 +88,9 @@ const schema = new mongoose.Schema({
             type: Object,
             schema: {
                 messageDetailId: String,
+                content: String,
+                type: String,
+                senderId: String,
                 pinnedBy: String,
                 pinnedAt: String
             }

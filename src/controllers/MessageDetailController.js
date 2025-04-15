@@ -1,5 +1,7 @@
 const MessageDetail = require('../models/MessageDetail');
 const Conversation = require('../models/Conversation');
+const NotificationController = require('./NotificationController');
+const notificationController = new NotificationController();
 const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
@@ -263,6 +265,187 @@ class MessageDetailController {
             });
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async recallMessage(req, res) {
+        try {
+            const userId = req.userId;
+            const messaageId = req.params.messageId;
+
+            const message = await MessageDetail.findOne({
+                messageDetailId: messaageId,
+                senderId: userId
+            });
+
+            if (!message) {
+                return res.status(404).json({ message: 'Message not found or you are not authorized to recall it' });
+            }
+            message.isRecall = true;
+            await message.save();
+
+            res.json({ message: 'Message recalled successfully' });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async deleteMessage(req, res) {
+        try {
+            const userId = req.userId;
+            const messageId = req.params.messageId;
+            const message = await MessageDetail.findOne({
+                messageDetailId: messageId
+            })
+
+            if (!message) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            if (message.hiddenFrom?.includes(userId)) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            await MessageDetail.updateOne(
+                { messageDetailId: messageId },
+                { $addToSet: { hiddenFrom: userId } }
+            );
+
+            res.json({ message: 'Message deleted successfully' });
+        }
+        catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async pinMessage(req, res) {
+        try {
+            const userId = req.userId;
+            const messageId = req.params.messageId;
+            const user = await User.findOne({ userId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const message = await MessageDetail.findOne({
+                messageDetailId: messageId
+            });
+
+            if (!message) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            if (message.isPinned) {
+                return res.status(400).json({ message: 'Message is already pinned' });
+            }
+
+            const conversation = await Conversation.findOne({
+                conversationId: message.conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            await MessageDetail.updateOne(
+                { messageDetailId: messageId },
+                {
+                    isPinned: true,
+                    pinnedAt: new Date().toISOString()
+                }
+            );
+            await Conversation.updateOne(
+                { conversationId: message.conversationId },
+                {
+                    pinnedMessages: {
+                        messageDetailId: messageId,
+                        content: message.content,
+                        type: message.type,
+                        senderId: message.senderId,
+                        pinnedAt: new Date().toISOString(),
+                        pinnedBy: userId
+                    }
+                } 
+            )
+            await notificationController.createNotification(
+                'PIN_MESSAGE',
+                message.conversationId,
+                userId,
+                [],
+                `${user.fullname} đã ghim tin nhắn ${message.content}`
+            )
+            res.json({ message: 'Message pinned successfully' });
+        } catch(error) {
+            res.status(500).json({ message: error.message });
+        }
+    } 
+    async unpinMessage(req, res) {
+        try {
+            const userId = req.userId;
+            const messageId = req.params.messageId;
+            const user = await User.findOne({ userId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const message = await MessageDetail.findOne({
+                messageDetailId: messageId
+            });
+            
+            if (!message) {
+                return res.status(404).json({ message: 'Message not found' }); 
+            }
+
+            if (!message.isPinned) {
+                return res.status(400).json({ message: 'Message is not pinned' }); 
+            }
+
+            const conversation = await Conversation.findOne({
+                conversationId: message.conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' }); 
+            }
+
+            await MessageDetail.updateOne(
+                { messageDetailId: messageId },
+                {
+                    isPinned: false,
+                    pinnedAt: null
+                } 
+            )
+            await Conversation.updateOne(
+                { conversationId: message.conversationId },
+                {
+                    $pull: {
+                        pinnedMessages: {
+                            messageDetailId: messageId
+                        }
+                    }
+                }
+            )
+            await notificationController.createNotification(
+                'UNPIN_MESSAGE',
+                message.conversationId,
+                userId, 
+                [],
+                `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`
+            )
+            res.json({ message: 'Message unpinned successfully' });
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 }

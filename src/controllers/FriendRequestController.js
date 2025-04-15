@@ -5,7 +5,14 @@ class FriendRequestController {
     async getFriendRequestsSent(req, res) {
         try {
             const userId = req.userId;
-            const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' }).populate('senderId', 'userId fullname urlavatar');
+            const friendRequests = await FriendRequest.find({ senderId: userId, status: 'pending' })
+                .populate({
+                    path: 'senderId',
+                    select: 'userId fullname urlavatar',
+                    model: 'User',
+                    localField: 'senderId',
+                    foreignField: 'userId'
+                });
             res.json(friendRequests);
         }
         catch (error) {
@@ -16,7 +23,14 @@ class FriendRequestController {
     async getFriendRequestsReceived(req, res) {
         try {
             const userId = req.userId;
-            const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' }).populate('senderId', 'userId fullname urlavatar');
+            const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' })
+                .populate({
+                    path: 'receiverId',
+                    select: 'userId fullname urlavatar',
+                    model: 'User',
+                    localField: 'receiverId',
+                    foreignField: 'userId'
+                });
             res.json(friendRequests);
         } catch (error) {
             res.status(500).json({ message: error.message });
