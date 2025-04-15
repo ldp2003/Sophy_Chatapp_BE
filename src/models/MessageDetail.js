@@ -69,18 +69,16 @@ const schema = new mongoose.Schema({
         default: []
     },
     attachments: {
-        type: Array,
-        schema: [{
-            type: Object,
-            schema: {
-                type: String,
-                url: String,
-                name: String,
-                size: Number,
-                mimeType: String
-            }
-        }],
-        default: []
+        type: Object,
+        schema: {
+            type: String,
+            url: String,
+            name: String,
+            size: Number,
+            duration: Number,
+            thumbnail: String
+        },
+        default: null
     },
     poll: {
         type: Object,

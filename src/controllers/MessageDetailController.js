@@ -5,12 +5,15 @@ const notificationController = new NotificationController();
 const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
+const cloudinary = require('../config/cloudinary');
+const DatauriParser = require('datauri/parser');
+const parser = new DatauriParser();
 const { getSocketController } = require('../socket');
 
 class MessageDetailController {
     async sendMessage(req, res) {
         try {
-            const { conversationId, content, type = 'text', attachments = [] } = req.body;
+            const { conversationId, content, type = 'text' } = req.body;
             const senderId = req.userId;
             const sender = await User.findOne({ userId: senderId });
 
@@ -69,7 +72,6 @@ class MessageDetailController {
                 conversationId,
                 type,
                 content,
-                attachments,
                 createdAt: new Date().toISOString(),
                 sendStatus: 'sent'
             });
@@ -96,6 +98,203 @@ class MessageDetailController {
                 fullname: sender.fullname,
                 avatar: sender.avatar || null
             });
+            res.status(201).json(message);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+    async sendMessageWithImage(req, res) {
+        try{
+            if (!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
+
+            const { conversationId, content, type = 'text-with-image'} = req.body;
+            const senderId = req.userId;
+            const sender = await User.findOne({ userId: senderId });
+
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
+
+            const conversation = await Conversation.findOne({
+                conversationId,
+                $or: [
+                    { creatorId: sender.userId },
+                    { receiverId: sender.userId },
+                    { groupMembers: sender.userId }
+                ]
+            });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === sender.userId?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                if (receiver.blockedUsers?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });  
+                } 
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
+                    ] 
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
+            }
+
+            
+            const fileUri = parser.format(
+                req.file.originalname,
+                req.file.buffer
+            ).content;
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+                folder: `conversations/${conversationId}/images`,
+                transformation: [
+                    { quality: 'auto' },
+                    { fetch_format: 'auto' }
+                ]
+            });
+
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+
+            const attachment = {
+                type: 'image',
+                url: uploadResponse.secure_url,
+                name: req.file.originalname,                
+                size: uploadResponse.bytes,
+            };
+
+            const message = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: sender.userId,
+                conversationId,
+                type,
+                content,
+                attachment: attachment,
+                createdAt: new Date().toISOString(),
+                sendStatus: 'sent'
+            });
+
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content,
+                    type,
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
+                },   
+                lastChange: message.createdAt
+            })
+
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActiveTime: new Date() } 
+            )
+
+            res.status(201).json(message);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async sendMessageOnlyFile(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
+
+            const { conversationId } = req.body;
+            const fileType = req.file.mimetype;
+            const type = fileType.startsWith('video/') ? 'video' : 'file';
+            
+            const fileUri = parser.format(
+                req.file.originalname,
+                req.file.buffer
+            ).content;
+
+            // Different upload options based on file type
+            const uploadOptions = {
+                folder: `conversations/${conversationId}/${type}s`,
+                resource_type: 'auto',
+            };
+
+            // Add video-specific options
+            if (type === 'video') {
+                uploadOptions.eager = [
+                    { format: 'mp4', quality: 'auto' }
+                ];
+                uploadOptions.chunk_size = 6000000; // 6MB chunks for better upload
+            }
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri, uploadOptions);
+
+            const attachment = {
+                url: uploadResponse.secure_url,
+                type: type,
+                name: req.file.originalname,
+                size: uploadResponse.bytes,
+            };
+
+            // Add video-specific metadata if available
+            if (type === 'video') {
+                attachment.duration = uploadResponse.duration;
+                attachment.thumbnail = uploadResponse.thumbnail_url;
+            }
+
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+
+            const message = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: sender.userId,
+                conversationId,
+                type,
+                content: null,
+                attachment,
+                createdAt: new Date().toISOString(),
+                sendStatus: 'sent'
+            });
+
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content: req.file.originalname,
+                    type,
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
+                },
+                lastChange: message.createdAt
+            });
+
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActiveTime: new Date() } 
+            )
             res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -444,6 +643,95 @@ class MessageDetailController {
                 `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`
             )
             res.json({ message: 'Message unpinned successfully' });
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async replyMessage(req, res) {
+        try{
+            const userId = req.userId;
+            const messageId = req.params.messageId;
+            const { content, type, attachments } = req.body;
+            const user = await User.findOne({ userId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const message = await MessageDetail.findOne({
+                messageDetailId: messageId
+            });
+
+            if (!message) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            if (message.hiddenFrom?.includes(userId)) {
+                return res.status(404).json({ message: 'Message not found' });
+            }
+
+            const conversation = await Conversation.findOne({
+                conversationId: message.conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            const last3Digits = user.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+
+            const replyMessage = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: userId,
+                conversationId: message.conversationId,
+                type,
+                content,
+                attachments,
+                createdAt: new Date().toISOString(),
+                isReply: true,
+                messageReplyId: message.messageDetailId,
+                replyData: {
+                    content: message.content,
+                    type: message.type,
+                    senderId: message.senderId
+                },
+                sendStatus: 'sent'
+            });
+
+            await conversation.updateOne(
+                { conversationId: message.conversationId },
+                {
+                    newestMessageId: replyMessage.messageDetailId,
+                    lastMessage: {
+                        content: replyMessage.content,
+                        type: replyMessage.type,
+                        senderId: replyMessage.senderId,
+                        createdAt: replyMessage.createdAt
+                    },
+                    lastChange: replyMessage.createdAt
+                }
+            )
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActiveTime: new Date() }
+            );
+
+            res.status(201).json(replyMessage);
         } catch (error) {
             res.status(500).json({ message: error.message }); 
         }
