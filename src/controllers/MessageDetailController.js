@@ -215,6 +215,79 @@ class MessageDetailController {
         }
     }
 
+    async sendMessageOnlyImage(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
+            }
+
+            const { conversationId } = req.body;
+            const type = 'image';
+
+            const fileUri = parser.format(
+                req.file.originalname,
+                req.file.buffer
+            ).content;
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri, {
+                folder: `conversations/${conversationId}/${type}s`,
+                transformation: [
+                    { quality: 'auto' },
+                    { fetch_format: 'auto' }
+                ] 
+            })
+
+            const attachment = {
+                url: uploadResponse.secure_url,
+                type: type,
+                name: req.file.originalname,
+                size: uploadResponse.bytes,
+ 
+            }
+
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+
+            const message = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: sender.userId,
+                conversationId,  
+                type,
+                content: null,
+                attachment,
+                createdAt: new Date().toISOString(),
+                sendStatus:'sent'
+            });
+
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content: req.file.originalname,
+                    type,
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
+                },
+                lastChange: message.createdAt   
+            })
+
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActiveTime: new Date() } 
+            )
+
+            res.status(201).json(message);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
     async sendMessageOnlyFile(req, res) {
         try {
             if (!req.file) {

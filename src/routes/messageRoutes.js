@@ -9,6 +9,7 @@ const messageDetailController = new MessageDetailController();
 router.get('/:conversationId', auth, messageDetailController.getMessages);
 router.post('/send', auth, messageDetailController.sendMessage);
 router.post('/send-with-image', auth, uploadImage.single('image'), messageDetailController.sendMessageWithImage);
+router.post('/send-image', auth, uploadImage.single('image') ,messageDetailController.sendMessageOnlyImage);
 router.post('/send-with-file', auth, uploadFile.single('file'), messageDetailController.sendMessageOnlyFile);
 router.put('/recall/:messageId', auth, messageDetailController.recallMessage);
 router.put('/delete/:messageId', auth, messageDetailController.deleteMessage);
