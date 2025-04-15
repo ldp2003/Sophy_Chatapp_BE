@@ -2,7 +2,7 @@ const FriendRequest = require('../models/FriendRequest');
 const User = require('../models/User');
 
 class FriendRequestController {
-    async getFriendRequests(req, res) {
+    async getFriendRequestsSent(req, res) {
         try {
             const userId = req.userId;
             const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' }).populate('senderId', 'userId fullname urlavatar');
@@ -13,9 +13,20 @@ class FriendRequestController {
         }
     }
 
+    async getFriendRequestsReceived(req, res) {
+        try {
+            const userId = req.userId;
+            const friendRequests = await FriendRequest.find({ receiverId: userId, status: 'pending' }).populate('senderId', 'userId fullname urlavatar');
+            res.json(friendRequests);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
     async sendFriendRequest(req, res) {
         try {
-            const { receiverId, message } = req.body;
+            const receiverId = req.params.userId;
+            const {message } = req.body;
             const senderId = req.userId;
             const sender = await User.findOne({ userId: senderId });
             if (!sender) {
