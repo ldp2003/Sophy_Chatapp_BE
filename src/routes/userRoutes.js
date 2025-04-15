@@ -24,6 +24,7 @@ router.get('/blocked', auth, userController.getBlockedUsers.bind(userController)
 router.post('/friend-requests/send-request/:userId', auth, friendRequestController.sendFriendRequest.bind(friendRequestController));
 router.get('/friend-requests-sent', auth, friendRequestController.getFriendRequestsSent.bind(friendRequestController));
 router.get('/friend-requests-received', auth, friendRequestController.getFriendRequestsReceived.bind(friendRequestController));
+router.delete('/friend-requests/retrieve-request/:requestId', auth, friendRequestController.retrieveFriendRequest.bind(friendRequestController));
 router.put('/friend-requests/accept-request/:requestId', auth, friendRequestController.acceptFriendRequest.bind(friendRequestController));
 router.put('/friend-requests/reject-request/:requestId', auth, friendRequestController.rejectFriendRequest.bind(friendRequestController));
 

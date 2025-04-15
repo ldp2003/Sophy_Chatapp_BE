@@ -130,7 +130,7 @@ class UserController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            const friends = await User.find({ userId: { $in: user.listFriend } }).select('-password -deviceTokens -createdAt -blockList');
+            const friends = await User.find({ userId: { $in: user.friendList } }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(friends);
         } catch (error) {

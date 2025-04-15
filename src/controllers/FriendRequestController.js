@@ -100,6 +100,27 @@ class FriendRequestController {
         }
     }
 
+    async retrieveFriendRequest(req, res) {
+        try {
+            const requestId = req.params.requestId;
+            const userId = req.userId;
+
+            const friendRequest = await FriendRequest.findOne({ friendRequestId: requestId });
+
+            if (!friendRequest) {
+                return res.status(404).json({ message: 'Friend request not found' });
+            }
+            if (friendRequest.senderId !== userId) {
+                return res.status(403).json({ message: 'You are not authorized to retrieve this friend request' });
+            }
+            if (friendRequest.status!=='pending') {
+                return res.status(400).json({ message: 'This friend request has already been processed' });
+            }
+            res.json({message: 'Friend request retrieved successfully'});
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        } 
+    }
     async acceptFriendRequest(req, res) {
         try {
             const { friendRequestId } = req.body;
