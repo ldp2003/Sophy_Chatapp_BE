@@ -1127,7 +1127,7 @@ class MessageDetailController {
         try {
             const userId = req.userId;
             const messageId = req.params.messageId;
-            const { content, type, attachments } = req.body;
+            const { content} = req.body;
             const user = await User.findOne({ userId });
 
             if (!user) {
@@ -1173,16 +1173,16 @@ class MessageDetailController {
                 messageDetailId: messageDetailId,
                 senderId: userId,
                 conversationId: message.conversationId,
-                type,
+                type: 'text',
                 content,
-                attachments,
                 createdAt: new Date().toISOString(),
                 isReply: true,
                 messageReplyId: message.messageDetailId,
                 replyData: {
                     content: message.content,
                     type: message.type,
-                    senderId: message.senderId
+                    senderId: message.senderId,
+                    attachment: message.attachment,
                 },
                 sendStatus: 'sent'
             });
