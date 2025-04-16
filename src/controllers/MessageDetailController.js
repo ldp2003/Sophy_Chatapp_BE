@@ -546,9 +546,8 @@ class MessageDetailController {
 
     async sendMessageWithImageMobile(req, res){
         try {
-            const { imageBase64, content } = req.body;
+            const { imageBase64, content, conversationId  } = req.body;
 
-            const conversationId = req.params.conversationId;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
@@ -646,8 +645,7 @@ class MessageDetailController {
 
     async sendMessageOnlyImageMobile(req, res) {
         try {
-            const { imageBase64 } = req.body;
-            const conversationId = req.params.conversationId;
+            const { imageBase64, conversationId  } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
@@ -749,8 +747,7 @@ class MessageDetailController {
 
     async sendMessageOnlyFileMobile(req, res) {
         try {
-            const { fileBase64 } = req.body;
-            const conversationId = req.params.conversationId;
+            const { fileBase64, conversationId  } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
