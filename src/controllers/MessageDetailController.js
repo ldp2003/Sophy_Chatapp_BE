@@ -747,6 +747,120 @@ class MessageDetailController {
         }
     }
 
+    async sendMessageOnlyFileMobile(req, res) {
+        try {
+            const { fileBase64 } = req.body;
+            const conversationId = req.params.conversationId;
+            const userId = req.userId;
+            const sender = await User.findOne({ userId: userId });
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            });
+    
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
+    
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+    
+            if (!fileBase64) {
+                return res.status(400).json({ message: 'No file provided' });
+            }
+    
+            if (!fileBase64.startsWith('data:')) {
+                return res.status(400).json({ message: 'Invalid file format' });
+            }
+
+            const mimeType = fileBase64.split(';')[0].split(':')[1];
+            const type = mimeType.startsWith('video/') ? 'video' : 'file';
+    
+            const uploadOptions = {
+                folder: `conversations/${conversationId}/${type}s`,
+                resource_type: 'auto',
+            };
+    
+            if (type === 'video') {
+                uploadOptions.eager = [
+                    { format: 'mp4', quality: 'auto' }
+                ];
+                uploadOptions.chunk_size = 6000000; 
+            }
+    
+            const uploadResponse = await cloudinary.uploader.upload(fileBase64, uploadOptions);
+    
+            const attachment = {
+                url: uploadResponse.secure_url,
+                type: type,
+                name: `${type}_${Date.now()}`,
+                size: uploadResponse.bytes,
+            };
+    
+    
+            if (type === 'video') {
+                attachment.duration = uploadResponse.duration;
+                attachment.thumbnail = uploadResponse.thumbnail_url;
+            }
+    
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+    
+            const message = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: sender.userId,
+                conversationId,
+                type,
+                content: null,
+                attachment,
+                createdAt: new Date().toISOString(),
+                sendStatus: 'sent'
+            });
+    
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content: attachment.name,
+                    type,
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
+                },
+                lastChange: message.createdAt
+            });
+    
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActive: new Date() }
+            );
+    
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
+    
+            res.status(201).json(message);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
     async getMessageContext(req, res) {
         try {
             const { conversationId } = req.params;
@@ -1092,7 +1206,7 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: userId },
-                { lastActiveTime: new Date() }
+                { lastActive: new Date() }
             );
 
             res.status(201).json(replyMessage);

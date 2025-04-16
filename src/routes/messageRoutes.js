@@ -14,7 +14,7 @@ router.post('/send-image', auth, uploadImage.single('image') ,messageDetailContr
 router.post('/send-file', auth, uploadFile.single('file'), messageDetailController.sendMessageOnlyFile);
 router.post('/mobile/send-with-image', auth, messageDetailController.sendMessageWithImageMobile);
 router.post('/mobile/send-image', auth, messageDetailController.sendMessageOnlyImageMobile);
-// router.post('/mobile/send-file', auth, messageDetailController.sendMessageOnlyFileMobile);
+router.post('/mobile/send-file', auth, messageDetailController.sendMessageOnlyFileMobile);
 router.put('/recall/:messageId', auth, messageDetailController.recallMessage);
 router.put('/delete/:messageId', auth, messageDetailController.deleteMessage);
 router.put('/pin/:messageId', auth, messageDetailController.pinMessage);
