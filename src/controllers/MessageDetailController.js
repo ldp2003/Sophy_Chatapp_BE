@@ -1111,6 +1111,33 @@ class MessageDetailController {
             message.isRecall = true;
             await message.save();
 
+            const conversation = await Conversation.findOne({
+                conversationId: message.conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ] 
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if(conversation.newestMessageId === message.messageDetailId) {
+               await Conversation.findOneAndUpdate({ conversationId: conversation.conversationId }, {
+                    lastMessage:{
+                        isRecall: true,
+                    },
+                    lastChange: new Date().toISOString()
+                }) 
+            }
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json({ message: 'Message recalled successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });

@@ -35,7 +35,11 @@ const schema = new mongoose.Schema({
             content: String,
             type: String,
             senderId: String,
-            createdAt: String
+            createdAt: String,
+            isRecall: {
+                type: Boolean,
+                default: false
+            }
         },
         default: null
     },
