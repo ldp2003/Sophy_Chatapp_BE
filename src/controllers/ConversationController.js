@@ -748,7 +748,7 @@ class ConversationController {
         }
     }
 
-    async updateGroupBackground(req, res) {
+    async updateBackground(req, res) {
         try {
             if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
@@ -757,22 +757,21 @@ class ConversationController {
             const userId = req.userId;
             const user = await User.findOne({ userId });
             const { conversationId } = req.params;
-            const conversation = await Conversation.findOne({ conversationId });
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
 
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found' });
-            }
-
-            if (!conversation.isGroup) {
-                return res.status(400).json({ message: 'This is not a group conversation' });
-            }
-
-            if (!conversation.groupMembers.includes(userId)) {
-                return res.status(403).json({ message: 'You are not a member of this group' });
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
             const fileUri = parser.format(
@@ -781,34 +780,34 @@ class ConversationController {
             ).content;
 
             const uploadResponse = await cloudinary.uploader.upload(fileUri, {
-                folder: 'groupBackgrounds',
+                folder: `conversations/${conversationId}/background`,
                 transformation: [
                     { quality: 'auto', fetch_format: 'auto' },
                     { flags: 'preserve_transparency' }
                 ]
             });
 
-            if (conversation.groupBackgroundUrl && uploadResponse.secure_url) {
-                const publicId = conversation.groupBackgroundUrl.split('/').pop().split('.')[0];
+            if (conversation.background && uploadResponse.secure_url) {
+                const publicId = conversation.background.split('/').pop().split('.')[0];
                 try {
-                    await cloudinary.uploader.destroy(`groupBackgrounds/${publicId}`);
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/background/${publicId}`);
                 } catch (error) {
-                    console.error('Error deleting old group background:', error);
+                    console.error('Error deleting old background:', error);
                 }
             }
 
             await Conversation.findOneAndUpdate(
                 { conversationId: conversationId },
-                { groupBackgroundUrl: uploadResponse.secure_url },
+                { background: uploadResponse.secure_url },
                 { new: true }
             )
 
             await notificationController.createNotification(
-                'UPDATE_GROUP_BACKGROUND',
+                'UPDATE_BACKGROUND',
                 conversationId,
                 userId,
                 [],
-                `${user.fullname} đã thay đổi ảnh nền nhóm`
+                `${user.fullname} đã thay đổi ảnh nền`
             )
 
             // io.to(conversationId).emit('groupBackgroundUpdated', {
@@ -818,7 +817,7 @@ class ConversationController {
             // });
             const updatedConversation = await Conversation.findOne({ conversationId });
             res.json({
-                message: 'Group background updated successfully',
+                message: 'Background updated successfully',
                 conversation: updatedConversation
             })
         } catch (error) {

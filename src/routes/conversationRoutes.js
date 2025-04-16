@@ -19,6 +19,6 @@ router.put('/group/delete/:conversationId', auth, conversationController.deleteG
 router.put('/group/:conversationId/leave', auth, conversationController.leaveGroup.bind(conversationController));
 router.put('/group/update/name/:conversationId', auth, conversationController.updateGroupName.bind(conversationController));
 router.put('/group/update/avatar/:conversationId', auth, uploadImage.single('groupAvatar'), conversationController.updateGroupAvatar.bind(conversationController));
-router.put('/group/update/background/:conversationId', auth, uploadImage.single('groupBackground'), conversationController.updateGroupBackground.bind(conversationController));
+router.put('/update/background/:conversationId', auth, uploadImage.single('background'), conversationController.updateBackground.bind(conversationController));
 
 module.exports = router;

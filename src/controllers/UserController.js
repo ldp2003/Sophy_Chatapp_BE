@@ -1,64 +1,10 @@
 const User = require('../models/User');
+const FriendRequest = require('../models/FriendRequest');
 const cloudinary = require('../config/cloudinary');
 const DatauriParser = require('datauri/parser');
 const parser = new DatauriParser();
 
 class UserController {
-    async checkUsedPhone(req, res) {
-        try {
-            const { phone, countryCode } = req.params;
-
-            const phoneRegex = /^0\d{9}$/;
-            if (!phoneRegex.test(phone)) {
-                return res.status(400).json({ message: 'Invalid phone number format.' });
-            }
-
-            const user = await User.findOne({ phone });
-            if (user) {
-                return res.status(400).json({ message: 'Phone number is already used' });
-            }
-
-            const otp = Math.floor(100000 + Math.random() * 900000).toString(); // OTP 6 số
-            const otpId = uuidv4();
-
-            otpCache.set(phone, {
-                otp,
-                otpId,
-                expiresAt: Date.now() + 5 * 60 * 1000 //5 phút hết hạn
-            });
-
-            try {
-                console.log(`Testing OTP for ${phone}: ${otp}`);
-                return res.json({
-                    message: 'Verification code generated.',
-                    otpId: otpId,
-                    otp: otp
-                });
-            } catch (smsError) {
-                console.error('SMS sending error:', smsError);
-                return res.status(500).json({ message: 'Failed to send verification code' });
-            }
-
-            // try {
-            //     await twilioClient.messages.create({
-            //         body: `Your verification code to register Sophy is: ${otp}`,
-            //         from: process.env.TWILIO_PHONE_NUMBER,
-            //         to: phone
-            //     });
-
-            //     res.json({ 
-            //         message: 'Verification code sent',
-            //         otpId: otpId
-            //     });
-            // } catch (smsError) {
-            //     console.error('SMS sending error:', smsError);
-            //     res.status(500).json({ message: 'Failed to send verification code' });
-            // }
-        }
-        catch (error) {
-            res.status(500).json({ message: error.message });
-        }
-    }
     async getUserById(req, res) {
         try {
             const { userId } = req.params;
@@ -132,9 +78,50 @@ class UserController {
 
             const friends = await User.find({ userId: { $in: user.friendList } }).select('-password -deviceTokens -createdAt -blockList');
 
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json(friends);
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async unfriend(req, res) {
+        try {
+            const userId = req.userId;
+            const friendId = req.params.userId;
+            const user = await User.findOne({ userId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!user.friendList.includes(friendId)) {
+                return res.status(400).json({ message: 'User is not your friend' });
+            }
+
+            await User.findOneAndUpdate({ userId }, { $pull: { friendList: friendId } }, { new: true });
+            await User.findOneAndUpdate({ userId: friendId }, { $pull: { friendList: userId } }, { new: true });
+
+            await FriendRequest.findOneAndDelete({
+                $or: [
+                    { senderId: userId, receiverId: friendId },
+                    { senderId: friendId, receiverId: userId }
+                ]
+            });
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
+            res.json({ message: 'Friend removed successfully' });
+        } 
+        catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 
@@ -164,6 +151,10 @@ class UserController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
             res.json(user);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -218,6 +209,11 @@ class UserController {
                 }
             }
 
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json({
                 message: 'Avatar updated successfully',
                 user: updatedUser
@@ -255,6 +251,11 @@ class UserController {
             if (!updatedUser) {
                 return res.status(404).json({ message: 'User not found' });
             }
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
 
             res.json({
                 message: 'User info updated successfully',
@@ -315,6 +316,11 @@ class UserController {
                 }
             }
 
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json({
                 message: 'Avatar updated successfully',
                 user: updatedUser
@@ -349,6 +355,11 @@ class UserController {
                 { new: true }
             ).select('-password');
             
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json({
                 message: 'Profile updated successfully',
                 user: updatedUser
@@ -386,6 +397,11 @@ class UserController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json(user);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -397,7 +413,7 @@ class UserController {
             const userId = req.userId;
             const blockedUserId = req.params.userId;
             const currentUser = await User.findOne({ userId });
-            const blockedUser = await User.findOne({ userId: blockingUserId });
+            const blockedUser = await User.findOne({ userId: blockedUserId });
             if (!currentUser) {
                 return res.status(404).json({ message: 'Current user not found' });
             }
@@ -415,13 +431,16 @@ class UserController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             res.json(user);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
     }
-
-
 }
 
 module.exports = UserController;
