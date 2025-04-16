@@ -137,8 +137,18 @@ class SocketController {
 
             socket.on('joinUserConversations', (conversations) => {
                 const userId = socket.userId;
-                const userConvSet = userConversations.get(userId);
+                if (!userId) {
+                    console.warn('Attempt to join conversations without authentication');
+                    return;
+                }
 
+                if (!userConversations.has(userId)) {
+                    userConversations.set(userId, new Set());
+                }
+
+                const userConvSet = userConversations.get(userId);
+                
+                // Clear existing conversations
                 if (userConvSet) {
                     userConvSet.forEach(convId => {
                         socket.leave(convId);
@@ -146,10 +156,17 @@ class SocketController {
                     userConvSet.clear();
                 }
 
-                conversations.forEach(convId => {
-                    socket.join(convId);
-                    userConvSet.add(convId);
-                });
+                // Join new conversations
+                if (Array.isArray(conversations)) {
+                    conversations.forEach(convId => {
+                        if (convId) {
+                            socket.join(convId);
+                            userConvSet.add(convId);
+                        }
+                    });
+                } else {
+                    console.warn('Invalid conversations data received:', conversations);
+                }
             });
 
 
