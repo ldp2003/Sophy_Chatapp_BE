@@ -143,7 +143,7 @@ class FriendRequestController {
             await FriendRequest.findOneAndDelete({ friendRequestId: requestId });
 
             const socketController = getSocketController();
-            socketController.emitRetrieveFriendrequest(friendRequest.receiverId, friendRequest.friendRequestId);
+            socketController.emitRetrieveFriendRequest(friendRequest.receiverId, friendRequest.friendRequestId);
             res.json({ message: 'Friend request retrieved successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
