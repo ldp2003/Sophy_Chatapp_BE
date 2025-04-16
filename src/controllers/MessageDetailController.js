@@ -948,12 +948,7 @@ class MessageDetailController {
     
             const attachment = {
                 url: uploadResponse.secure_url,
-                downloadUrl: cloudinary.url(uploadResponse.public_id, {
-                    resource_type: uploadResponse.resource_type,
-                    flags: 'attachment',
-                    sign_url: true,
-                    type: 'upload'
-                }),
+                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: fileType,
                 name: fileName,
                 size: uploadResponse.bytes,
