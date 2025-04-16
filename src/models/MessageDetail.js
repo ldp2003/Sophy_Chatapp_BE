@@ -76,6 +76,7 @@ const schema = new mongoose.Schema({
         schema: {
             type: String,
             url: String,
+            downloadUrl: String,
             name: String,
             size: Number,
             duration: Number,

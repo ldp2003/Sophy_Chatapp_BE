@@ -948,6 +948,11 @@ class MessageDetailController {
     
             const attachment = {
                 url: uploadResponse.secure_url,
+                downloadUrl: cloudinary.utils.private_download_url(uploadResponse.public_id, uploadResponse.format, {
+                    resource_type: 'auto',
+                    type: 'upload',
+                    attachment: true
+                }),
                 type: fileType,
                 name: fileName,
                 size: uploadResponse.bytes,
