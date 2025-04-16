@@ -426,6 +426,7 @@ class MessageDetailController {
             const uploadOptions = {
                 folder: `conversations/${conversationId}/${type}s`,
                 resource_type: 'auto',
+                flags: 'attachment',
             };
 
             // Add video-specific options
@@ -440,6 +441,7 @@ class MessageDetailController {
 
             const attachment = {
                 url: uploadResponse.secure_url,
+                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: type,
                 name: req.file.originalname,
                 size: uploadResponse.bytes,
