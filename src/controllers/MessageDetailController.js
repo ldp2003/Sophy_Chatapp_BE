@@ -875,7 +875,7 @@ class MessageDetailController {
 
     async sendMessageOnlyFileMobile(req, res) {
         try {
-            const { fileBase64, conversationId  } = req.body;
+            const { fileBase64, conversationId, fileName, fileType  } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
@@ -947,8 +947,8 @@ class MessageDetailController {
     
             const attachment = {
                 url: uploadResponse.secure_url,
-                type: type,
-                name: `${type}_${Date.now()}`,
+                type: fileType,
+                name: fileName,
                 size: uploadResponse.bytes,
             };
     
