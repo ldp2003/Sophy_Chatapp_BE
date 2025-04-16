@@ -40,8 +40,12 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                if (receiver.blockedUsers?.includes(sender.userId)) {
+                if (receiver.blockList?.includes(sender.userId)) {
                     return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
                 }
 
                 const isFriend = await FriendRequest.findOne({
@@ -138,9 +142,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                if (receiver.blockedUsers?.includes(sender.userId)) {
-                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                }
+                    if (receiver.blockList?.includes(sender.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (sender.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -153,7 +161,6 @@ class MessageDetailController {
                     return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
                 }
             }
-
 
             const fileUri = parser.format(
                 req.file.originalname,
@@ -244,6 +251,44 @@ class MessageDetailController {
                 return res.status(404).json({ message: 'Sender not found' });
             }
 
+            const conversation = await Conversation.findOne({
+                conversationId,
+                $or: [
+                    { creatorId: sender.userId },
+                    { receiverId: sender.userId },
+                    { groupMembers: sender.userId }
+                ]
+            });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === sender.userId ?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                    if (receiver.blockList?.includes(sender.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (sender.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
+                    ]
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
+            }
+
             const fileUri = parser.format(
                 req.file.originalname,
                 req.file.buffer
@@ -327,9 +372,46 @@ class MessageDetailController {
             const { conversationId } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
+            const conversation = await Conversation.findOne({
+                conversationId,
+                $or: [
+                    { creatorId: sender.userId },
+                    { receiverId: sender.userId },
+                    { groupMembers: sender.userId }
+                ]
+            });
 
             if (!sender) {
                 return res.status(404).json({ message: 'Sender not found' });
+            }
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === sender.userId ?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                    if (receiver.blockList?.includes(sender.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (sender.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
+                    ]
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
             }
 
             const fileType = req.file.mimetype;
@@ -560,7 +642,32 @@ class MessageDetailController {
             })
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' });  
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === sender.userId ?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                    if (receiver.blockList?.includes(sender.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (sender.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
+                    ]
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
             }
            
             if (!sender) {
@@ -665,6 +772,31 @@ class MessageDetailController {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === sender.userId ?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                    if (receiver.blockList?.includes(sender.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (sender.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
+                    ]
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
+            }
+
             if (!imageBase64) {
                 return res.status(400).json({ message: 'No image provided' }); 
             }
@@ -765,6 +897,31 @@ class MessageDetailController {
     
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === sender.userId ?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                    if (receiver.blockList?.includes(sender.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (sender.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: sender.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: sender.userId, status: 'accepted' }
+                    ]
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
             }
     
             if (!fileBase64) {
@@ -1157,6 +1314,31 @@ class MessageDetailController {
 
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!conversation.isGroup) {
+                const receiver = conversation.creatorId === user.userId ?
+                    await User.findOne({ userId: conversation.receiverId }) :
+                    await User.findOne({ userId: conversation.creatorId });
+
+                    if (receiver.blockList?.includes(user.userId)) {
+                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                    }
+    
+                    if (user.blockList?.includes(receiver.userId)) {
+                        return res.status(403).json({ message: 'You have blocked the recipient' });
+                    }
+
+                const isFriend = await FriendRequest.findOne({
+                    $or: [
+                        { senderId: user.userId, receiverId: receiver.userId, status: 'accepted' },
+                        { senderId: receiver.userId, receiverId: user.userId, status: 'accepted' }
+                    ]
+                })
+
+                if (!isFriend && receiver.settings?.block_msg_from_strangers) {
+                    return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
+                }
             }
 
             const last3Digits = user.phone.slice(-3);
