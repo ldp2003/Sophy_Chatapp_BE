@@ -141,6 +141,9 @@ class FriendRequestController {
                 return res.status(400).json({ message: 'This friend request has already been processed' });
             }
             await FriendRequest.findOneAndDelete({ friendRequestId: requestId });
+
+            const socketController = getSocketController();
+            socketController.emitRetrieveFriendrequest(friendRequest.receiverId, friendRequest.friendRequestId);
             res.json({ message: 'Friend request retrieved successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -192,6 +195,8 @@ class FriendRequestController {
 
             await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'accepted', updatedAt: new Date().toISOString() });
 
+            const socketController = getSocketController();
+            socketController.emitAcceptFriendRequest(friendRequest.senderId, friendRequest.friendRequestId);
             res.json({ message: 'Friend request accepted successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -213,6 +218,8 @@ class FriendRequestController {
 
             await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'rejected', updatedAt: new Date().toISOString(), deletionDate: new Date() });
 
+            const socketController = getSocketController();
+            socketController.emitRejectFriendRequest(friendRequest.senderId, friendRequest.friendRequestId);
             res.json({ message: 'Friend request rejected successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });

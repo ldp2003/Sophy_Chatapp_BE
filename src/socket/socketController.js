@@ -229,6 +229,36 @@ class SocketController {
         }
     }
 
+    emitRejectedFriendRequest(receiverId, friendRequestData) {
+        const receiverSocketId = userSockets.get(receiverId);
+        if (receiverSocketId) {
+            this.io.to(receiverSocketId).emit('rejectedFriendRequest', {
+                ...friendRequestData,
+                timestamp: new Date()
+            });
+        }
+    }
+
+    emitAcceptedFriendRequest(receiverId, friendRequestData) {
+        const receiverSocketId = userSockets.get(receiverId);
+        if (receiverSocketId) {
+            this.io.to(receiverSocketId).emit('acceptedFriendRequest', {
+               ...friendRequestData,
+                timestamp: new Date()
+            });
+        }
+    }
+
+    emitRetrieveFriendRequest(receiverId, friendRequestData) {
+        const receiverSocketId = userSockets.get(receiverId);
+        if (receiverSocketId) {
+            this.io.to(receiverSocketId).emit('retrievedFriendRequest', {
+               ...friendRequestData,
+                timestamp: new Date()
+            });
+        }
+    }
+
     getQrSession(qrToken) {
         return qrLoginSessions.get(qrToken);
     }
