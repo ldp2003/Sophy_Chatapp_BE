@@ -20,6 +20,6 @@ router.put('/delete/:messageId', auth, messageDetailController.deleteMessage);
 router.put('/pin/:messageId', auth, messageDetailController.pinMessage);
 router.put('/unpin/:messageId', auth, messageDetailController.unpinMessage);
 router.post('/reply/:messageId', auth, messageDetailController.replyMessage);
-// router.put('/read/:conversationId', auth, messageDetailController.markMessageAsRead);
+router.put('/read/:conversationId', auth, messageDetailController.markMessageAsRead);
 
 module.exports = router;

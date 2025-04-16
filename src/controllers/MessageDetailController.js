@@ -1214,6 +1214,51 @@ class MessageDetailController {
             res.status(500).json({ message: error.message });
         }
     }
+
+    async markMessageAsRead(req, res) {
+        try {
+            const userId = req.userId;
+            const user = await User.findOne({ userId });
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+
+            const conversationId = req.params.conversationId;
+            const conversation = await Conversation.findOne({
+                conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ] 
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' }); 
+            }
+
+            await MessageDetail.updateMany(
+                {
+                    conversationId,
+                    senderId: { $ne: userId },
+                    'readBy.userId': { $ne: userId }
+                }, 
+                {
+                    $push: {
+                        readBy: {
+                            userId: userId,
+                            readAt: new Date().toISOString()
+                        }
+                    } 
+                }
+            )
+
+            res.json({ message: 'Message marked as read successfully' });
+
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
 }
 
 module.exports = MessageDetailController;
