@@ -211,6 +211,9 @@ class MessageDetailController {
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
+                $push:{
+                    listImage: attachment.url 
+                },
                 lastChange: message.createdAt
             })
 
@@ -338,6 +341,9 @@ class MessageDetailController {
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
+                },
+                $push:{
+                    listImage: attachment.url
                 },
                 lastChange: message.createdAt
             })
@@ -481,6 +487,12 @@ class MessageDetailController {
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
+                },
+                $push: {
+                    listFile: {
+                        name: attachment.name,
+                        downloadUrl: attachment.downloadUrl
+                    }
                 },
                 lastChange: message.createdAt
             });
@@ -727,7 +739,10 @@ class MessageDetailController {
                     type: 'text-with-image',
                     senderId: sender.userId,
                     createdAt: message.createdAt
-                }, 
+                },
+                $push: {
+                    listImage: attachment.url
+                },
                 lastChange: message.createdAt
             })
 
@@ -850,6 +865,9 @@ class MessageDetailController {
                     type: 'image',
                     senderId: sender.userId,
                     createdAt: message.createdAt
+                },
+                $push: {
+                    listImage: attachment.url
                 },
                 lastChange: message.createdAt 
             })
@@ -990,6 +1008,12 @@ class MessageDetailController {
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
+                },
+                $push: {
+                    listFile: {
+                        name: attachment.name,
+                        downloadUrl: attachment.downloadUrl
+                    }
                 },
                 lastChange: message.createdAt
             });
@@ -1231,6 +1255,12 @@ class MessageDetailController {
                     }
                 }
             )
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
             await notificationController.createNotification(
                 'PIN_MESSAGE',
                 message.conversationId,
@@ -1294,6 +1324,12 @@ class MessageDetailController {
                     }
                 }
             )
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() } 
+            )
+            
             await notificationController.createNotification(
                 'UNPIN_MESSAGE',
                 message.conversationId,
@@ -1459,8 +1495,12 @@ class MessageDetailController {
                 }
             )
 
-            res.json({ message: 'Message marked as read successfully' });
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() } 
+            )
 
+            res.json({ message: 'Message marked as read successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
         }

@@ -84,7 +84,13 @@ const schema = new mongoose.Schema({
     listFile: {
         type: Array,
         default: [],
-        schema: [String],
+        schema: [{
+            type: Object,
+            schema: {
+                name: String,
+                downloadUrl: String
+            }
+        }]
     },
     pinnedMessages: {
         type: Array,
