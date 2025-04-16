@@ -89,14 +89,17 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() }
+                { lastActive: new Date() }
             );
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, message, {
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId  
+            }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
-                avatar: sender.avatar || null
+                avatar: sender.urlavatar || null
             });
             res.status(201).json(message);
         } catch (error) {
@@ -206,8 +209,18 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() }
+                { lastActive: new Date() }
             )
+
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId  
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
@@ -286,8 +299,18 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() }
+                { lastActive: new Date() }
             )
+
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId  
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
@@ -380,8 +403,18 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActiveTime: new Date() }
+                { lastActive: new Date() }
             )
+
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId  
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
             res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -508,6 +541,209 @@ class MessageDetailController {
             res.json(messages);
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async sendMessageWithImageMobile(req, res){
+        try {
+            const { imageBase64, content } = req.body;
+
+            const conversationId = req.params.conversationId;
+            const userId = req.userId;
+            const sender = await User.findOne({ userId: userId });
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });  
+            }
+           
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
+
+            if(!imageBase64){
+                return res.status(400).json({ message: 'No image provided' }); 
+            }
+
+            if (!imageBase64.startsWith('data:image')) {
+                return res.status(400).json({ message: 'Invalid image format' });
+            }
+
+            const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+                folder: `conversations/${conversationId}/images`,
+                transformation: [
+                    { quality: 'auto' },
+                    { fetch_format: 'auto' }
+                ]
+            });
+
+            const attachment = {
+                url: uploadResponse.secure_url,
+                type: 'image',
+                name: imageBase64.split(',')[1],
+                size: uploadResponse.bytes,
+            };
+
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+
+            const message = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: sender.userId,
+                conversationId,
+                type: 'text-with-image',
+                content,
+                attachment,
+                createdAt: new Date().toISOString(),
+                sendStatus:'sent'
+            });
+
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content,
+                    type: 'text-with-image',
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
+                }, 
+                lastChange: message.createdAt
+            })
+
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActive: new Date() } 
+            )
+
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId  
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
+
+            res.status(201).json(message);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
+
+    async sendMessageOnlyImageMobile(req, res) {
+        try {
+            const { imageBase64 } = req.body;
+            const conversationId = req.params.conversationId;
+            const userId = req.userId;
+            const sender = await User.findOne({ userId: userId });
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
+
+            if (!sender) {
+                return res.status(404).json({ message: 'Sender not found' });
+            }
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+
+            if (!imageBase64) {
+                return res.status(400).json({ message: 'No image provided' }); 
+            }
+
+            if (!imageBase64.startsWith('data:image')) {
+                return res.status(400).json({ message: 'Invalid image format' }); 
+            }
+
+            const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+                folder: `conversations/${conversationId}/images`,
+                transformation: [
+                    { quality: 'auto' },
+                    { fetch_format: 'auto' }
+                ] 
+            })
+
+            const attachment = {
+                url: uploadResponse.secure_url,
+                type: 'image',
+                name: imageBase64.split(',')[1], 
+                size: uploadResponse.bytes,
+            }
+
+            if (!targetMessage) {
+                return res.status(404).json({ message: 'Message not found' }); 
+            }
+
+            const last3Digits = sender.phone.slice(-3);
+            const currentDate = new Date();
+            const formattedDate = currentDate.getFullYear().toString().slice(-2) +
+                (currentDate.getMonth() + 1).toString().padStart(2, '0') +
+                currentDate.getDate().toString().padStart(2, '0') +
+                currentDate.getHours().toString().padStart(2, '0') +
+                currentDate.getMinutes().toString().padStart(2, '0') +
+                currentDate.getSeconds().toString().padStart(2, '0');
+            const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
+
+            const message = await MessageDetail.create({
+                messageDetailId: messageDetailId,
+                senderId: sender.userId,
+                conversationId,
+                type: 'image',
+                content,
+                attachment,
+                createdAt: new Date().toISOString(),
+                sendStatus:'sent'
+            });
+
+            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content,
+                    type: 'image',
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
+                },
+                lastChange: message.createdAt 
+            })
+
+            await User.updateOne(
+                { userId: sender.userId },
+                { lastActive: new Date() } 
+            )
+
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId  
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
+
+            res.status(201).json(message);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 
