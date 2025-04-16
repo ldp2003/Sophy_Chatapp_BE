@@ -1,5 +1,6 @@
 const FriendRequest = require('../models/FriendRequest');
 const User = require('../models/User');
+const { getSocketController } = require('../socket');
 
 class FriendRequestController {
     async getFriendRequestsSent(req, res) {
@@ -40,7 +41,7 @@ class FriendRequestController {
     async sendFriendRequest(req, res) {
         try {
             const receiverId = req.params.userId;
-            const {message } = req.body;
+            const { message } = req.body;
             const senderId = req.userId;
             const sender = await User.findOne({ userId: senderId });
             if (!sender) {
@@ -63,11 +64,10 @@ class FriendRequestController {
                     { senderId: receiverId, receiverId: senderId, status: 'pending' }
                 ]
             });
-            
+
             if (existingPendingRequest) {
                 return res.status(400).json({ message: 'A pending friend request already exists between you and this user' });
             }
-
 
             const senderLastThree = sender.phone.slice(-3);
             const receiverLastThree = receiver.phone.slice(-3);
@@ -95,7 +95,7 @@ class FriendRequestController {
                 return res.status(400).json({ message: 'You are already friends with this user' });
             }
             if (sender.blockList.includes(receiverId)) {
-                return res.status(400).json({ message: 'You cannot send a friend request to this user' }); 
+                return res.status(400).json({ message: 'You cannot send a friend request to this user' });
             }
 
             await FriendRequest.create({
@@ -108,6 +108,16 @@ class FriendRequestController {
                 updatedAt: new Date().toISOString()
             });
 
+            const socketController = getSocketController();
+            socketController.emitFriendRequest(receiverId, {
+                friendRequestId,
+                message,
+                sender: {
+                    userId: sender.userId,
+                    fullname: sender.fullname,
+                    avatar: sender.urlavatar || null
+                }
+            });
             res.json({ message: 'Friend request sent successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -127,25 +137,25 @@ class FriendRequestController {
             if (friendRequest.senderId !== userId) {
                 return res.status(403).json({ message: 'You are not authorized to retrieve this friend request' });
             }
-            if (friendRequest.status!=='pending') {
+            if (friendRequest.status !== 'pending') {
                 return res.status(400).json({ message: 'This friend request has already been processed' });
             }
             await FriendRequest.findOneAndDelete({ friendRequestId: requestId });
-            res.json({message: 'Friend request retrieved successfully'});
+            res.json({ message: 'Friend request retrieved successfully' });
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
-        } 
+            res.status(500).json({ message: error.message });
+        }
     }
     async acceptFriendRequest(req, res) {
         try {
-            const  friendRequestId  = req.params.requestId;
+            const friendRequestId = req.params.requestId;
             const userId = req.userId;
             const friendRequest = await FriendRequest.findOne({ friendRequestId });
             if (!friendRequest) {
                 return res.status(404).json({ message: 'Friend request not found' });
-            } 
+            }
             if (friendRequest.receiverId !== userId) {
-                return res.status(403).json({ message: 'You are not authorized to accept this friend request' }); 
+                return res.status(403).json({ message: 'You are not authorized to accept this friend request' });
             }
 
             const sender = await User.findOne({ userId: friendRequest.senderId });
@@ -166,7 +176,7 @@ class FriendRequestController {
                 return res.status(400).json({ message: 'You cannot add this user to your friend list' });
             }
 
-            if(receiver.friendList.includes(sender.userId)) {
+            if (receiver.friendList.includes(sender.userId)) {
                 return res.status(400).json({ message: 'You are already friends with this user' });
             }
 
@@ -190,7 +200,7 @@ class FriendRequestController {
 
     async rejectFriendRequest(req, res) {
         try {
-            const  friendRequestId  = req.params.requestId;
+            const friendRequestId = req.params.requestId;
             const userId = req.userId;
             const friendRequest = await FriendRequest.findOne({ friendRequestId });
             if (!friendRequest) {
@@ -198,14 +208,14 @@ class FriendRequestController {
             }
 
             if (friendRequest.receiverId !== userId) {
-                return res.status(403).json({ message: 'You are not authorized to reject this friend request' });  
-            } 
+                return res.status(403).json({ message: 'You are not authorized to reject this friend request' });
+            }
 
             await FriendRequest.findOneAndUpdate({ friendRequestId }, { status: 'rejected', updatedAt: new Date().toISOString(), deletionDate: new Date() });
 
             res.json({ message: 'Friend request rejected successfully' });
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 }

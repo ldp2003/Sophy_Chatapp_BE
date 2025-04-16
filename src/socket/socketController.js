@@ -202,6 +202,16 @@ class SocketController {
         });
     }
 
+    emitFriendRequest(receiverId, friendRequestData) {
+        const receiverSocketId = userSockets.get(receiverId);
+        if (receiverSocketId) {
+            this.io.to(receiverSocketId).emit('newFriendRequest', {
+                ...friendRequestData,
+                timestamp: new Date()
+            });
+        }
+    }
+
     getQrSession(qrToken) {
         return qrLoginSessions.get(qrToken);
     }

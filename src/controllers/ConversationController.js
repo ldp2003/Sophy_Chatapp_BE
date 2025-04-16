@@ -787,6 +787,17 @@ class ConversationController {
                 ]
             });
 
+            const updatedConversation = await Conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { background: uploadResponse.secure_url },
+                { new: true }
+            )
+
+            if (!updatedConversation) {
+                await cloudinary.uploader.destroy(`conversations/${conversationId}/background/${uploadResponse.public_id}`);
+                return res.status(500).json({ message: 'Failed to update background' });
+            }
+
             if (conversation.background && uploadResponse.secure_url) {
                 const publicId = conversation.background.split('/').pop().split('.')[0];
                 try {
@@ -795,12 +806,6 @@ class ConversationController {
                     console.error('Error deleting old background:', error);
                 }
             }
-
-            await Conversation.findOneAndUpdate(
-                { conversationId: conversationId },
-                { background: uploadResponse.secure_url },
-                { new: true }
-            )
 
             await notificationController.createNotification(
                 'UPDATE_BACKGROUND',
@@ -815,13 +820,93 @@ class ConversationController {
             //     newBackgroundUrl: uploadResponse.secure_url,
             //     updatedBy: userId
             // });
-            const updatedConversation = await Conversation.findOne({ conversationId });
             res.json({
                 message: 'Background updated successfully',
                 conversation: updatedConversation
             })
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async updateBackgroundMobile(req, res) {
+        try {
+            const {imageBase64} = req.body;
+
+            if (!imageBase64) {
+                return res.status(400).json({ message: 'No image uploaded' }); 
+            }
+
+            if (!imageBase64.startsWith('data:image/')) {
+                return res.status(400).json({ message: 'Invalid image format' });
+            }
+
+            const userId = req.userId;
+            const user = await User.findOne({ userId });
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' }); 
+            }
+            const { conversationId } = req.params;
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ] 
+            })
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' }); 
+            }
+
+            const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+                folder: `conversations/${conversationId}/background`,
+                transformation: [
+                    { quality: 'auto', fetch_format: 'auto' },
+                    { flags: 'preserve_transparency' }
+                ]
+            });
+
+            const updatedConversation = await Conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { background: uploadResponse.secure_url },
+                { new: true }
+            )
+
+            if (!updatedConversation) {
+                await cloudinary.uploader.destroy(`conversations/${conversationId}/background/${uploadResponse.public_id}`);
+                return res.status(500).json({ message: 'Failed to update background' }); 
+            }
+
+            if (conversation.background && uploadResponse.secure_url) {
+                const publicId = conversation.background.split('/').pop().split('.')[0];
+                try {
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/background/${publicId}`);
+                } catch (error) {
+                    console.error('Error deleting old background:', error);
+                }
+            }
+
+            await notificationController.createNotification(
+                'UPDATE_BACKGROUND',
+                conversationId,
+                userId,
+                [],
+                `${user.fullname} đã thay đổi ảnh nền`
+            )
+
+            // io.to(conversationId).emit('groupBackgroundUpdated', {
+            //     conversationId,
+            //     newBackgroundUrl: uploadResponse.secure_url,
+            //     updatedBy: userId
+            // });
+            res.json({
+                message: 'Background updated successfully',
+                conversation: updatedConversation
+            });
+        } 
+        catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 }

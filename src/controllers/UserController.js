@@ -296,7 +296,7 @@ class UserController {
             
             const updatedUser = await User.findOneAndUpdate(
                 { userId },
-                { urlavatar: uploadResponse.secure_url },
+                { urlavatar: uploadResponse.secure_url, lastActive: new Date() },
                 { new: true }
             ).select('-password');
 
@@ -315,11 +315,6 @@ class UserController {
                     console.error('Error deleting old avatar:', deleteError);
                 }
             }
-
-            await User.updateOne(
-                { userId: userId },
-                { lastActive: new Date() }
-            );
 
             res.json({
                 message: 'Avatar updated successfully',
@@ -391,8 +386,13 @@ class UserController {
             if (currentUser.friendList.includes(blockingUserId)) {
                 await User.findOneAndUpdate({ userId }, { $pull: { friendList: blockingUserId } }, { new: true });
             }
+
+            if(blockingUser.friendList.includes(userId)) {
+                await User.findOneAndUpdate({ userId: blockingUserId }, { $pull: { friendList: userId } }, { new: true }); 
+            }
             
             const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockingUserId } }, { new: true }).select('-password');
+            
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
