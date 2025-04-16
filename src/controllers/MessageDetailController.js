@@ -934,6 +934,7 @@ class MessageDetailController {
             const uploadOptions = {
                 folder: `conversations/${conversationId}/${type}s`,
                 resource_type: 'auto',
+                flags: 'attachment' 
             };
     
             if (type === 'video') {
