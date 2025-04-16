@@ -233,7 +233,7 @@ class SocketController {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('rejectedFriendRequest', {
-                ...friendRequestData,
+                friendRequestData,
                 timestamp: new Date()
             });
         }
@@ -243,7 +243,7 @@ class SocketController {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('acceptedFriendRequest', {
-               ...friendRequestData,
+               friendRequestData,
                 timestamp: new Date()
             });
         }
@@ -253,7 +253,7 @@ class SocketController {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('retrievedFriendRequest', {
-               ...friendRequestData,
+               friendRequestData,
                 timestamp: new Date()
             });
         }
