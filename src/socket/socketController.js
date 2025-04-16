@@ -229,7 +229,7 @@ class SocketController {
         }
     }
 
-    emitRejectedFriendRequest(receiverId, friendRequestData) {
+    emitRejectFriendRequest(receiverId, friendRequestData) {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('rejectedFriendRequest', {
@@ -239,7 +239,7 @@ class SocketController {
         }
     }
 
-    emitAcceptedFriendRequest(receiverId, friendRequestData) {
+    emitAcceptFriendRequest(receiverId, friendRequestData) {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('acceptedFriendRequest', {
