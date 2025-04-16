@@ -208,7 +208,7 @@ class SocketController {
         });
     }
 
-    emitUserTyping(conversationId, userId) {
+    emitUserTyping(conversationId, userId, fullname) {
         this.io.to(conversationId).emit('userTyping', { conversationId, userId, fullname });
     }
 
