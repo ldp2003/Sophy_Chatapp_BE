@@ -820,10 +820,6 @@ class MessageDetailController {
                 size: uploadResponse.bytes,
             }
 
-            if (!targetMessage) {
-                return res.status(404).json({ message: 'Message not found' }); 
-            }
-
             const last3Digits = sender.phone.slice(-3);
             const currentDate = new Date();
             const formattedDate = currentDate.getFullYear().toString().slice(-2) +
@@ -839,7 +835,7 @@ class MessageDetailController {
                 senderId: sender.userId,
                 conversationId,
                 type: 'image',
-                content,
+                content: null,
                 attachment,
                 createdAt: new Date().toISOString(),
                 sendStatus:'sent'
@@ -848,7 +844,7 @@ class MessageDetailController {
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content,
+                    content: attachment.name,
                     type: 'image',
                     senderId: sender.userId,
                     createdAt: message.createdAt
