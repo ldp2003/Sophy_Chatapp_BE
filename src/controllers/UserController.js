@@ -56,7 +56,7 @@ class UserController {
 
     async searchUsersByArrayId(req, res) {
         try {
-            const userIds = req.body;
+            const { userIds }= req.body;
             const users = await User.find({ userId: { $in: userIds } }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(users);
