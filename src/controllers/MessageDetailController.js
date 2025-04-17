@@ -215,7 +215,8 @@ class MessageDetailController {
                 transformation: [
                     { quality: 'auto' },
                     { fetch_format: 'auto' }
-                ]
+                ],
+                flags: 'attachment'
             });
 
             const last3Digits = sender.phone.slice(-3);
@@ -231,6 +232,7 @@ class MessageDetailController {
             const attachment = {
                 type: 'image',
                 url: uploadResponse.secure_url,
+                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 name: req.file.originalname,
                 size: uploadResponse.bytes,
             };
@@ -345,11 +347,13 @@ class MessageDetailController {
                 transformation: [
                     { quality: 'auto' },
                     { fetch_format: 'auto' }
-                ]
+                ],
+                flags: 'attachment'
             })
 
             const attachment = {
                 url: uploadResponse.secure_url,
+                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: type,
                 name: req.file.originalname,
                 size: uploadResponse.bytes,
@@ -731,11 +735,13 @@ class MessageDetailController {
                 transformation: [
                     { quality: 'auto' },
                     { fetch_format: 'auto' }
-                ]
+                ],
+                flags: 'attachment'
             });
 
             const attachment = {
                 url: uploadResponse.secure_url,
+                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: 'image',
                 name: imageBase64.split(',')[1],
                 size: uploadResponse.bytes,
@@ -857,11 +863,13 @@ class MessageDetailController {
                 transformation: [
                     { quality: 'auto' },
                     { fetch_format: 'auto' }
-                ] 
+                ],
+                flags: 'attachment'
             })
 
             const attachment = {
                 url: uploadResponse.secure_url,
+                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: 'image',
                 name: imageBase64.split(',')[1], 
                 size: uploadResponse.bytes,
