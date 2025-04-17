@@ -371,11 +371,7 @@ class MessageDetailController {
 
     async sendMessageOnlyFile(req, res) {
         try {
-            if (!req.file) {
-                return res.status(400).json({ message: 'No file uploaded' });
-            }
-
-            const { conversationId } = req.body;
+            const { conversationId, attachment } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
@@ -420,45 +416,6 @@ class MessageDetailController {
                 }
             }
 
-            const fileType = req.file.mimetype;
-            const type = fileType.startsWith('video/') ? 'video' : 'file';
-
-            const fileUri = parser.format(
-                req.file.originalname,
-                req.file.buffer
-            ).content;
-
-            // Different upload options based on file type
-            const uploadOptions = {
-                folder: `conversations/${conversationId}/${type}s`,
-                resource_type: 'auto',
-                flags: 'attachment',
-            };
-
-            // Add video-specific options
-            if (type === 'video') {
-                uploadOptions.eager = [
-                    { format: 'mp4', quality: 'auto' }
-                ];
-                uploadOptions.chunk_size = 6000000; // 6MB chunks for better upload
-            }
-
-            const uploadResponse = await cloudinary.uploader.upload(fileUri, uploadOptions);
-
-            const attachment = {
-                url: uploadResponse.secure_url,
-                downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
-                type: type,
-                name: req.file.originalname,
-                size: uploadResponse.bytes,
-            };
-
-            // Add video-specific metadata if available
-            if (type === 'video') {
-                attachment.duration = uploadResponse.duration;
-                attachment.thumbnail = uploadResponse.thumbnail_url;
-            }
-
             const last3Digits = sender.phone.slice(-3);
             const currentDate = new Date();
             const formattedDate = currentDate.getFullYear().toString().slice(-2) +
@@ -473,9 +430,9 @@ class MessageDetailController {
                 messageDetailId: messageDetailId,
                 senderId: sender.userId,
                 conversationId,
-                type,
+                type: attachment.type,
                 content: null,
-                attachment,
+                attachment: attachment,
                 createdAt: new Date().toISOString(),
                 sendStatus: 'sent'
             });
@@ -483,7 +440,7 @@ class MessageDetailController {
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content: req.file.originalname,
+                    content: attachment.name,
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
