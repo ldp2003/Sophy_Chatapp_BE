@@ -441,7 +441,7 @@ class MessageDetailController {
                 newestMessageId: messageDetailId,
                 lastMessage: {
                     content: attachment.name,
-                    type,
+                    type: attachment.type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
