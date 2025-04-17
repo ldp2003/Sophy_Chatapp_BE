@@ -17,7 +17,7 @@ class NotificationController {
             });
 
             await Conversation.findOneAndUpdate(
-                { 
+                {
                     conversationId,
                     $or: [
                         { 'lastMessage.createdAt': { $lt: notification.createdAt } },
@@ -49,12 +49,12 @@ class NotificationController {
         try {
             const { conversationId } = req.params;
             const { oldestTime, newestTime } = req.query;
-            
+
             const conversation = await Conversation.findOne({ conversationId });
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found' });
             }
-            
+
             const query = { conversationId };
 
             if (oldestTime || newestTime) {
@@ -73,6 +73,34 @@ class NotificationController {
 
             res.json(notifications);
         } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async getAllConversationNotifications(req, res) {
+        try {
+            const { conversationId } = req.params;
+            const userId = req.user.userId;
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+
+            const notifications = await Notification.find({ conversationId })
+                .sort({ createdAt: -1 })
+                .lean();
+
+            res.json(notifications);
+        }
+        catch (error) {
             res.status(500).json({ message: error.message });
         }
     }
