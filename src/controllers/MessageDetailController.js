@@ -1110,13 +1110,15 @@ class MessageDetailController {
             }
 
             if(conversation.newestMessageId === message.messageDetailId) {
-               await Conversation.findOneAndUpdate({ conversationId: conversation.conversationId }, {
-                    lastMessage:{
-                        isRecall: true,
-                        createdAt: new Date().toISOString()
-                    },
-                    lastChange: new Date().toISOString()
-                }) 
+                await Conversation.findOneAndUpdate(
+                    { conversationId: conversation.conversationId },
+                    {
+                        $set: {
+                            'lastMessage.isRecall': true,
+                            lastChange: new Date().toISOString()
+                        }
+                    }
+                );
             }
 
             await User.updateOne(
