@@ -94,16 +94,14 @@ class MessageDetailController {
             if (conversation.isGroup) {
                 // First find existing unreadCount for each member
                 const existingUnreadCounts = conversation.unreadCount || [];
-                const updatedUnreadCounts = conversation.groupMembers
-                    .filter(memberId => memberId !== sender.userId)
-                    .map(memberId => {
-                        const existing = existingUnreadCounts.find(u => u.userId === memberId);
-                        return {
-                            userId: memberId,
-                            count: (existing?.count || 0) + 1,
-                            lastReadMessageId: existing?.lastReadMessageId || null
-                        };
-                    });
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
 
                 await Conversation.findOneAndUpdate(
                     { conversationId },
@@ -116,20 +114,25 @@ class MessageDetailController {
                 const receiverId = conversation.creatorId === sender.userId ? 
                     conversation.receiverId : conversation.creatorId;
                 
-                const existingUnreadCount = conversation.unreadCount?.find(u => u.userId === receiverId);
-                const newCount = (existingUnreadCount?.count || 0) + 1;
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
 
                 await Conversation.findOneAndUpdate(
                     { conversationId },
                     {
                         ...updateData,
-                        $set: {
-                            unreadCount: [{
-                                userId: receiverId,
-                                count: newCount,
-                                lastReadMessageId: existingUnreadCount?.lastReadMessageId || null
-                            }]
-                        }
+                        $set: { unreadCount: updatedUnreadCounts }
                     }
                 );
             }
@@ -261,6 +264,52 @@ class MessageDetailController {
                 },
                 lastChange: message.createdAt
             })
+
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ? 
+                    conversation.receiverId : conversation.creatorId;
+                
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            }
 
             await User.updateOne(
                 { userId: sender.userId },
@@ -395,6 +444,52 @@ class MessageDetailController {
                 lastChange: message.createdAt
             })
 
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ? 
+                    conversation.receiverId : conversation.creatorId;
+                
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            }
+
             await User.updateOne(
                 { userId: sender.userId },
                 { lastActive: new Date() }
@@ -501,6 +596,52 @@ class MessageDetailController {
                 lastChange: message.createdAt
             });
 
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ? 
+                    conversation.receiverId : conversation.creatorId;
+                
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            }
+
             await User.updateOne(
                 { userId: sender.userId },
                 { lastActive: new Date() }
@@ -528,7 +669,7 @@ class MessageDetailController {
             const { lastMessageTime, direction = 'before', limit = 20 } = req.query;
             const userId = req.userId;
 
-            const conversation = await Conversation.find({
+            const conversation = await Conversation.findOne({
                 conversationId: conversationId,
                 $or: [
                     { creatorId: userId },
@@ -586,6 +727,7 @@ class MessageDetailController {
                     }
                 }
             );
+
             await Conversation.updateOne(
                 { conversationId },
                 {
@@ -910,6 +1052,52 @@ class MessageDetailController {
                 lastChange: message.createdAt 
             })
 
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ? 
+                    conversation.receiverId : conversation.creatorId;
+                
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            }
+
             await User.updateOne(
                 { userId: sender.userId },
                 { lastActive: new Date() } 
@@ -1056,6 +1244,52 @@ class MessageDetailController {
                 lastChange: message.createdAt
             });
     
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ? 
+                    conversation.receiverId : conversation.creatorId;
+                
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            }
+
             await User.updateOne(
                 { userId: sender.userId },
                 { lastActive: new Date() }
