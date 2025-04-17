@@ -11,7 +11,7 @@ router.get('/all/:conversationId', auth, messageDetailController.getAllMessages)
 router.post('/send', auth, messageDetailController.sendMessage);
 router.post('/send-with-image', auth, uploadImage.single('image'), messageDetailController.sendMessageWithImage);
 router.post('/send-image', auth, uploadImage.single('image') ,messageDetailController.sendMessageOnlyImage);
-router.post('/send-file', auth, uploadFile.single('file'), messageDetailController.sendMessageOnlyFile);
+router.post('/send-file', auth, messageDetailController.sendMessageOnlyFile);
 router.post('/mobile/send-with-image', auth, messageDetailController.sendMessageWithImageMobile);
 router.post('/mobile/send-image', auth, messageDetailController.sendMessageOnlyImageMobile);
 router.post('/mobile/send-file', auth, messageDetailController.sendMessageOnlyFileMobile);

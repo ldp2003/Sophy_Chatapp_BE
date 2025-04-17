@@ -1113,6 +1113,7 @@ class MessageDetailController {
                await Conversation.findOneAndUpdate({ conversationId: conversation.conversationId }, {
                     lastMessage:{
                         isRecall: true,
+                        createdAt: new Date().toISOString()
                     },
                     lastChange: new Date().toISOString()
                 }) 
