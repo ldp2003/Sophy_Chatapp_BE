@@ -80,7 +80,7 @@ class MessageDetailController {
                 sendStatus: 'sent'
             });
 
-            await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+            const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
                     content,
@@ -89,7 +89,50 @@ class MessageDetailController {
                     createdAt: message.createdAt
                 },
                 lastChange: message.createdAt
-            });
+            };
+
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers
+                    .filter(memberId => memberId !== sender.userId)
+                    .map(memberId => {
+                        const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                        return {
+                            userId: memberId,
+                            count: (existing?.count || 0) + 1,
+                            lastReadMessageId: existing?.lastReadMessageId || null
+                        };
+                    });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ? 
+                    conversation.receiverId : conversation.creatorId;
+                
+                const existingUnreadCount = conversation.unreadCount?.find(u => u.userId === receiverId);
+                const newCount = (existingUnreadCount?.count || 0) + 1;
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: {
+                            unreadCount: [{
+                                userId: receiverId,
+                                count: newCount,
+                                lastReadMessageId: existingUnreadCount?.lastReadMessageId || null
+                            }]
+                        }
+                    }
+                );
+            }
 
             await User.updateOne(
                 { userId: sender.userId },
@@ -539,6 +582,18 @@ class MessageDetailController {
                     }
                 }
             );
+            await Conversation.updateOne(
+                { conversationId },
+                {
+                    $set: {
+                        'unreadCount.$[elem].lastReadMessageId': conversation.newestMessageId,
+                        'unreadCount.$[elem].count': 0
+                    }
+                },
+                {
+                    arrayFilters: [{ 'elem.userId': userId }]
+                }
+            );
 
             // res.json({
             //     messages,
@@ -590,6 +645,24 @@ class MessageDetailController {
                         }
                     }
                 }
+            );
+
+            await Conversation.updateOne(
+                { conversationId },
+                {
+                    $set: {
+                        'unreadCount.$[elem].lastReadMessageId': conversation.newestMessageId,
+                        'unreadCount.$[elem].count': 0
+                    }
+                },
+                {
+                    arrayFilters: [{ 'elem.userId': userId }]
+                }
+            );
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
             );
             res.json(messages);
         } catch (error) {
@@ -1458,6 +1531,19 @@ class MessageDetailController {
                 }
             )
 
+            await Conversation.updateOne(
+                { conversationId },
+                {
+                    $set: {
+                        'unreadCount.$[elem].lastReadMessageId': conversation.newestMessageId,
+                        'unreadCount.$[elem].count': 0
+                    }
+                },
+                {
+                    arrayFilters: [{ 'elem.userId': userId }]
+                }
+            );
+            
             await User.updateOne(
                 { userId: userId },
                 { lastActive: new Date() } 
