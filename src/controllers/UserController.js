@@ -54,6 +54,16 @@ class UserController {
         }
     }
 
+    async searchUsersByArrayId(req, res) {
+        try {
+            const userIds = req.body;
+            const users = await User.find({ userId: { $in: userIds } }).select('-password -deviceTokens -createdAt -blockList');
+
+            res.json(users);
+        } catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
     async getProfileById(req, res) {
         try {
             const { userId } = req.params;
