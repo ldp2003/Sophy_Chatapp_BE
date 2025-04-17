@@ -56,6 +56,8 @@ class SocketController {
                     userConversations.set(userId, new Set());
                 }
 
+                socket.join(`user_${userId}`);
+
                 console.log('User authenticated:', {
                     userId,
                     socketId: socket.id,
@@ -193,6 +195,14 @@ class SocketController {
             userId: userId,
             socketId: socket.id,
             hasConversations: userConversations.has(userId)
+        });
+    }
+
+    emitNewConversation(receiverId, conversationData) {
+        const receiverRoom = `user_${receiverId}`;
+        this.io.to(receiverRoom).emit('newConversation', {
+            conversation: conversationData,
+            timestamp: new Date()
         });
     }
 

@@ -68,6 +68,14 @@ class ConversationController {
                 createdAt: new Date().toISOString(),
             });
 
+            const socketController = getSocketController();
+            socketController.emitNewConversation(receiverId, {
+                conversationId: conversation.conversationId,
+                creatorId: conversation.creatorId,
+                receiverId: conversation.receiverId,
+                createdAt: conversation.createdAt,
+            });
+
             res.status(201).json(conversation);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -103,6 +111,20 @@ class ConversationController {
                 },
                 lastChange: new Date().toISOString(),
                 createdAt: new Date().toISOString(),
+            });
+
+            const socketController = getSocketController();
+            groupMembers.forEach(memberId => {
+                if (memberId !== creatorId) { 
+                    socketController.emitNewConversation(memberId, {
+                        conversationId: conversation.conversationId,
+                        creatorId: conversation.creatorId,
+                        groupName: conversation.groupName,
+                        groupMembers: conversation.groupMembers,
+                        isGroup: true,
+                        createdAt: conversation.createdAt,
+                    });
+                }
             });
 
             res.status(201).json(conversation);
@@ -831,10 +853,10 @@ class ConversationController {
 
     async updateBackgroundMobile(req, res) {
         try {
-            const {imageBase64} = req.body;
+            const { imageBase64 } = req.body;
 
             if (!imageBase64) {
-                return res.status(400).json({ message: 'No image uploaded' }); 
+                return res.status(400).json({ message: 'No image uploaded' });
             }
 
             if (!imageBase64.startsWith('data:image/')) {
@@ -844,7 +866,7 @@ class ConversationController {
             const userId = req.userId;
             const user = await User.findOne({ userId });
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
             const { conversationId } = req.params;
             const conversation = await Conversation.findOne({
@@ -853,10 +875,10 @@ class ConversationController {
                     { creatorId: userId },
                     { receiverId: userId },
                     { groupMembers: { $in: [userId] } }
-                ] 
+                ]
             })
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' }); 
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
             const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
@@ -875,7 +897,7 @@ class ConversationController {
 
             if (!updatedConversation) {
                 await cloudinary.uploader.destroy(`conversations/${conversationId}/background/${uploadResponse.public_id}`);
-                return res.status(500).json({ message: 'Failed to update background' }); 
+                return res.status(500).json({ message: 'Failed to update background' });
             }
 
             if (conversation.background && uploadResponse.secure_url) {
@@ -904,9 +926,9 @@ class ConversationController {
                 message: 'Background updated successfully',
                 conversation: updatedConversation
             });
-        } 
+        }
         catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 }
