@@ -10,7 +10,7 @@ const friendRequestController = new FriendRequestController();
 router.get('/get-user/:phone', auth, userController.getUserByPhone.bind(userController));
 router.get('/get-user-by-id/:userId', auth, userController.getUserById.bind(userController));
 router.get('/search/:param', auth, userController.searchUsers.bind(userController));
-router.get('/search-users', auth, userController.searchUsersByArrayId.bind(userController));
+router.get('/search-users', auth, userController.searchUsersByArrayPhone.bind(userController));
 router.put('/update-user/name', auth, userController.updateName.bind(userController));
 router.put('/update-user/avatar', auth, uploadImage.single('avatar'), userController.updateAvatar.bind(userController));
 router.put('/update-user/info', auth, userController.updateInfo.bind(userController));

@@ -54,10 +54,10 @@ class UserController {
         }
     }
 
-    async searchUsersByArrayId(req, res) {
+    async searchUsersByArrayPhone(req, res) {
         try {
-            const { userIds }= req.body;
-            const users = await User.find({ userId: { $in: userIds } }).select('-password -deviceTokens -createdAt -blockList');
+            const { phones }= req.body;
+            const users = await User.find({ phone: { $in: phones } }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(users);
         } catch (error) {

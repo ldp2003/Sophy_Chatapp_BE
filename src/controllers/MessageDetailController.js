@@ -1166,6 +1166,9 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
+            const socketController = getSocketController();
+            socketController.emitRecallMessage(conversation.conversationId, message.messageDetailId);
+
             res.json({ message: 'Message recalled successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
