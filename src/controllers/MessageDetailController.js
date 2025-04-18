@@ -1867,7 +1867,7 @@ class MessageDetailController {
         try {
             const userId = req.userId;
             const messageId = req.params.messageId;
-            const { conversationId, attachment } = req.body; 
+            const { conversationId } = req.body; 
             const sender = await User.findOne({ userId });
 
             if (!sender) {
@@ -1934,13 +1934,14 @@ class MessageDetailController {
                 currentDate.getSeconds().toString().padStart(2, '0');
             const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
 
+            const attachment = message.attachment;
             const forwardMessage = await MessageDetail.create({
                 messageDetailId: messageDetailId,
                 senderId: sender.userId,
                 conversationId,
-                type: 'image',
-                content: null,
-                attachment,
+                type: message.type,
+                content: message.content,
+                attachment: message.attachment,
                 createdAt: new Date().toISOString(),
                 sendStatus: 'sent'
             });
@@ -1957,8 +1958,8 @@ class MessageDetailController {
             const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content: attachment.name,
-                    type: attachment.type,
+                    content: message.content || attachment.name,
+                    type: message.type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
