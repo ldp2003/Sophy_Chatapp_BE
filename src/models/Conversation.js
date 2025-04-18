@@ -79,7 +79,13 @@ const schema = new mongoose.Schema({
     listImage: {
         type: Array,
         default: [],
-        schema: [String],
+        schema: [{
+            type: Object,
+            schema: {
+                url: String,
+                downloadUrl: String
+            }
+        }]
     },
     listFile: {
         type: Array,

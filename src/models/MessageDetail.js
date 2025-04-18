@@ -18,7 +18,22 @@ const schema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['text', 'text-with-image', 'image', 'video', 'file']
+        enum: ['text', 'text-with-image', 'image', 'video', 'file', 'notification', 'pool']
+    },
+    notification: {
+        type: Object,
+        schema: {
+            type: {
+                type: String,
+                enum: ['ADD_MEMBER', 'REMOVE_MEMBER', 'LEAVE_GROUP', 'SET_OWNER', 'SET_CO_OWNER', 'REMOVE_CO_OWNER', 'UPDATE_GROUP_NAME', 'UPDATE_GROUP_AVATAR', 'UPDATE_BACKGROUND', 'DELETE_GROUP', 'PIN_MESSAGE', 'UNPIN_MESSAGE'],
+                required: true
+            },
+            actorId: String,
+            targetIds: {
+                type: Array,
+                schema: [String]
+            }
+        },
     },
     content: String,
     createdAt: {

@@ -111,9 +111,9 @@ class MessageDetailController {
                     }
                 );
             } else {
-                const receiverId = conversation.creatorId === sender.userId ? 
+                const receiverId = conversation.creatorId === sender.userId ?
                     conversation.receiverId : conversation.creatorId;
-                
+
                 const existingUnreadCounts = conversation.unreadCount || [];
                 const updatedUnreadCounts = [
                     {
@@ -145,7 +145,7 @@ class MessageDetailController {
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
-                messageId: message.messageDetailId  
+                messageId: message.messageDetailId
             }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
@@ -188,13 +188,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(sender.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (sender.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -252,6 +252,15 @@ class MessageDetailController {
             });
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                $push: {
+                    listImage:{
+                        url: attachment.url,
+                        downloadUrl: attachment.downloadUrl
+                    }
+                }
+            })
+            
+            const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
                     content,
@@ -259,11 +268,8 @@ class MessageDetailController {
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
-                $push:{
-                    listImage: attachment.url 
-                },
                 lastChange: message.createdAt
-            })
+            };
 
             if (conversation.isGroup) {
                 // First find existing unreadCount for each member
@@ -285,9 +291,9 @@ class MessageDetailController {
                     }
                 );
             } else {
-                const receiverId = conversation.creatorId === sender.userId ? 
+                const receiverId = conversation.creatorId === sender.userId ?
                     conversation.receiverId : conversation.creatorId;
-                
+
                 const existingUnreadCounts = conversation.unreadCount || [];
                 const updatedUnreadCounts = [
                     {
@@ -319,7 +325,7 @@ class MessageDetailController {
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
-                messageId: message.messageDetailId  
+                messageId: message.messageDetailId
             }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
@@ -366,13 +372,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(sender.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (sender.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -431,18 +437,25 @@ class MessageDetailController {
             });
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                $push: {
+                    listImage: {
+                        url: attachment.url,
+                        downloadUrl: attachment.downloadUrl
+                    }
+                }
+            })
+
+            const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content: req.file.originalname,
+                    content,
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
-                $push:{
-                    listImage: attachment.url
-                },
                 lastChange: message.createdAt
-            })
+            };
+
 
             if (conversation.isGroup) {
                 // First find existing unreadCount for each member
@@ -464,9 +477,9 @@ class MessageDetailController {
                     }
                 );
             } else {
-                const receiverId = conversation.creatorId === sender.userId ? 
+                const receiverId = conversation.creatorId === sender.userId ?
                     conversation.receiverId : conversation.creatorId;
-                
+
                 const existingUnreadCounts = conversation.unreadCount || [];
                 const updatedUnreadCounts = [
                     {
@@ -498,7 +511,7 @@ class MessageDetailController {
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
-                messageId: message.messageDetailId  
+                messageId: message.messageDetailId
             }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
@@ -538,13 +551,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(sender.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (sender.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -580,21 +593,24 @@ class MessageDetailController {
             });
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
-                newestMessageId: messageDetailId,
-                lastMessage: {
-                    content: attachment.name,
-                    type: attachment.type,
-                    senderId: sender.userId,
-                    createdAt: message.createdAt
-                },
                 $push: {
                     listFile: {
                         name: attachment.name,
                         downloadUrl: attachment.downloadUrl
                     }
+                }
+            });
+
+            const updateData = {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content,
+                    type,
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
                 },
                 lastChange: message.createdAt
-            });
+            };
 
             if (conversation.isGroup) {
                 // First find existing unreadCount for each member
@@ -616,9 +632,9 @@ class MessageDetailController {
                     }
                 );
             } else {
-                const receiverId = conversation.creatorId === sender.userId ? 
+                const receiverId = conversation.creatorId === sender.userId ?
                     conversation.receiverId : conversation.creatorId;
-                
+
                 const existingUnreadCounts = conversation.unreadCount || [];
                 const updatedUnreadCounts = [
                     {
@@ -650,7 +666,7 @@ class MessageDetailController {
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
-                messageId: message.messageDetailId  
+                messageId: message.messageDetailId
             }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
@@ -668,6 +684,11 @@ class MessageDetailController {
             // const { lastMessageTime, limit = 20 } = req.query;
             const { lastMessageTime, direction = 'before', limit = 20 } = req.query;
             const userId = req.userId;
+            const user = await User.findOne({ userId: userId });
+
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
 
             const conversation = await Conversation.findOne({
                 conversationId: conversationId,
@@ -740,6 +761,18 @@ class MessageDetailController {
                     arrayFilters: [{ 'elem.userId': userId }]
                 }
             );
+
+            await User.updateOne(
+                { userId: userId },
+                { lastActive: new Date() }
+            );
+
+            const socketController = getSocketController();
+            socketController.emitReadMessage(conversationId, {
+                userId: userId,
+                fullname: user.fullname,
+                avatar: user.urlavatar || null
+            });
 
             // res.json({
             //     messages,
@@ -816,9 +849,9 @@ class MessageDetailController {
         }
     }
 
-    async sendMessageWithImageMobile(req, res){
+    async sendMessageWithImageMobile(req, res) {
         try {
-            const { imageBase64, content, conversationId  } = req.body;
+            const { imageBase64, content, conversationId } = req.body;
 
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
@@ -840,13 +873,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(sender.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (sender.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -859,13 +892,13 @@ class MessageDetailController {
                     return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
                 }
             }
-           
+
             if (!sender) {
                 return res.status(404).json({ message: 'Sender not found' });
             }
 
-            if(!imageBase64){
-                return res.status(400).json({ message: 'No image provided' }); 
+            if (!imageBase64) {
+                return res.status(400).json({ message: 'No image provided' });
             }
 
             if (!imageBase64.startsWith('data:image')) {
@@ -907,32 +940,83 @@ class MessageDetailController {
                 content,
                 attachment,
                 createdAt: new Date().toISOString(),
-                sendStatus:'sent'
+                sendStatus: 'sent'
             });
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                $push: {
+                    listImage: {
+                        url: attachment.url,
+                        downloadUrl: attachment.downloadUrl,
+                    }
+                },
+            })
+
+            const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
                     content,
-                    type: 'text-with-image',
+                    type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
-                $push: {
-                    listImage: attachment.url
-                },
                 lastChange: message.createdAt
-            })
+            };
 
+            if (conversation.isGroup) {
+                // First find existing unreadCount for each member
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = conversation.groupMembers.map(memberId => {
+                    const existing = existingUnreadCounts.find(u => u.userId === memberId);
+                    return {
+                        userId: memberId,
+                        count: memberId === sender.userId ? 0 : ((existing?.count || 0) + 1),
+                        lastReadMessageId: memberId === sender.userId ? messageDetailId : (existing?.lastReadMessageId || null)
+                    };
+                });
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            } else {
+                const receiverId = conversation.creatorId === sender.userId ?
+                    conversation.receiverId : conversation.creatorId;
+
+                const existingUnreadCounts = conversation.unreadCount || [];
+                const updatedUnreadCounts = [
+                    {
+                        userId: sender.userId,
+                        count: 0,
+                        lastReadMessageId: messageDetailId
+                    },
+                    {
+                        userId: receiverId,
+                        count: (existingUnreadCounts.find(u => u.userId === receiverId)?.count || 0) + 1,
+                        lastReadMessageId: existingUnreadCounts.find(u => u.userId === receiverId)?.lastReadMessageId || null
+                    }
+                ];
+
+                await Conversation.findOneAndUpdate(
+                    { conversationId },
+                    {
+                        ...updateData,
+                        $set: { unreadCount: updatedUnreadCounts }
+                    }
+                );
+            }
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActive: new Date() } 
+                { lastActive: new Date() }
             )
 
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
-                messageId: message.messageDetailId  
+                messageId: message.messageDetailId
             }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
@@ -941,13 +1025,13 @@ class MessageDetailController {
 
             res.status(201).json(message);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async sendMessageOnlyImageMobile(req, res) {
         try {
-            const { imageBase64, conversationId  } = req.body;
+            const { imageBase64, conversationId } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
@@ -972,13 +1056,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(sender.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (sender.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -993,11 +1077,11 @@ class MessageDetailController {
             }
 
             if (!imageBase64) {
-                return res.status(400).json({ message: 'No image provided' }); 
+                return res.status(400).json({ message: 'No image provided' });
             }
 
             if (!imageBase64.startsWith('data:image')) {
-                return res.status(400).json({ message: 'Invalid image format' }); 
+                return res.status(400).json({ message: 'Invalid image format' });
             }
 
             const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
@@ -1013,7 +1097,7 @@ class MessageDetailController {
                 url: uploadResponse.secure_url,
                 downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: 'image',
-                name: imageBase64.split(',')[1], 
+                name: imageBase64.split(',')[1],
                 size: uploadResponse.bytes,
             }
 
@@ -1035,22 +1119,29 @@ class MessageDetailController {
                 content: null,
                 attachment,
                 createdAt: new Date().toISOString(),
-                sendStatus:'sent'
+                sendStatus: 'sent'
             });
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
+                $push: {
+                    listImage: {
+                        url: attachment.url,
+                        downloadUrl: attachment.downloadUrl,
+                    }
+                }
+            })
+
+            const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content: attachment.name,
-                    type: 'image',
+                    content,
+                    type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
-                $push: {
-                    listImage: attachment.url
-                },
-                lastChange: message.createdAt 
-            })
+                lastChange: message.createdAt
+            };
+
 
             if (conversation.isGroup) {
                 // First find existing unreadCount for each member
@@ -1072,9 +1163,9 @@ class MessageDetailController {
                     }
                 );
             } else {
-                const receiverId = conversation.creatorId === sender.userId ? 
+                const receiverId = conversation.creatorId === sender.userId ?
                     conversation.receiverId : conversation.creatorId;
-                
+
                 const existingUnreadCounts = conversation.unreadCount || [];
                 const updatedUnreadCounts = [
                     {
@@ -1100,13 +1191,13 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: sender.userId },
-                { lastActive: new Date() } 
+                { lastActive: new Date() }
             )
 
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
-                messageId: message.messageDetailId  
+                messageId: message.messageDetailId
             }, {
                 userId: sender.userId,
                 fullname: sender.fullname,
@@ -1115,13 +1206,13 @@ class MessageDetailController {
 
             res.status(201).json(message);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
     async sendMessageOnlyFileMobile(req, res) {
         try {
-            const { fileBase64, conversationId, fileName, fileType  } = req.body;
+            const { fileBase64, conversationId, fileName, fileType } = req.body;
             const userId = req.userId;
             const sender = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({
@@ -1132,11 +1223,11 @@ class MessageDetailController {
                     { groupMembers: { $in: [userId] } }
                 ]
             });
-    
+
             if (!sender) {
                 return res.status(404).json({ message: 'Sender not found' });
             }
-    
+
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
@@ -1146,13 +1237,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(sender.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (sender.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(sender.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (sender.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -1165,33 +1256,33 @@ class MessageDetailController {
                     return res.status(403).json({ message: 'Recipient does not accept messages from non-friends' });
                 }
             }
-    
+
             if (!fileBase64) {
                 return res.status(400).json({ message: 'No file provided' });
             }
-    
+
             if (!fileBase64.startsWith('data:')) {
                 return res.status(400).json({ message: 'Invalid file format' });
             }
 
             const mimeType = fileBase64.split(';')[0].split(':')[1];
             const type = mimeType.startsWith('video/') ? 'video' : 'file';
-    
+
             const uploadOptions = {
                 folder: `conversations/${conversationId}/${type}s`,
                 resource_type: 'auto',
-                flags: 'attachment' 
+                flags: 'attachment'
             };
-    
+
             if (type === 'video') {
                 uploadOptions.eager = [
                     { format: 'mp4', quality: 'auto' }
                 ];
-                uploadOptions.chunk_size = 6000000; 
+                uploadOptions.chunk_size = 6000000;
             }
-    
+
             const uploadResponse = await cloudinary.uploader.upload(fileBase64, uploadOptions);
-    
+
             const attachment = {
                 url: uploadResponse.secure_url,
                 downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
@@ -1199,13 +1290,13 @@ class MessageDetailController {
                 name: fileName,
                 size: uploadResponse.bytes,
             };
-    
-    
+
+
             if (type === 'video') {
                 attachment.duration = uploadResponse.duration;
                 attachment.thumbnail = uploadResponse.thumbnail_url;
             }
-    
+
             const last3Digits = sender.phone.slice(-3);
             const currentDate = new Date();
             const formattedDate = currentDate.getFullYear().toString().slice(-2) +
@@ -1215,7 +1306,7 @@ class MessageDetailController {
                 currentDate.getMinutes().toString().padStart(2, '0') +
                 currentDate.getSeconds().toString().padStart(2, '0');
             const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
-    
+
             const message = await MessageDetail.create({
                 messageDetailId: messageDetailId,
                 senderId: sender.userId,
@@ -1226,24 +1317,28 @@ class MessageDetailController {
                 createdAt: new Date().toISOString(),
                 sendStatus: 'sent'
             });
-    
+
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
-                newestMessageId: messageDetailId,
-                lastMessage: {
-                    content: attachment.name,
-                    type,
-                    senderId: sender.userId,
-                    createdAt: message.createdAt
-                },
                 $push: {
                     listFile: {
                         name: attachment.name,
                         downloadUrl: attachment.downloadUrl
                     }
+                }
+            });
+
+            const updateData = {
+                newestMessageId: messageDetailId,
+                lastMessage: {
+                    content,
+                    type,
+                    senderId: sender.userId,
+                    createdAt: message.createdAt
                 },
                 lastChange: message.createdAt
-            });
-    
+            };
+
+
             if (conversation.isGroup) {
                 // First find existing unreadCount for each member
                 const existingUnreadCounts = conversation.unreadCount || [];
@@ -1264,9 +1359,9 @@ class MessageDetailController {
                     }
                 );
             } else {
-                const receiverId = conversation.creatorId === sender.userId ? 
+                const receiverId = conversation.creatorId === sender.userId ?
                     conversation.receiverId : conversation.creatorId;
-                
+
                 const existingUnreadCounts = conversation.unreadCount || [];
                 const updatedUnreadCounts = [
                     {
@@ -1294,7 +1389,7 @@ class MessageDetailController {
                 { userId: sender.userId },
                 { lastActive: new Date() }
             );
-    
+
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, {
                 ...message,
@@ -1304,7 +1399,7 @@ class MessageDetailController {
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
             });
-    
+
             res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -1417,14 +1512,14 @@ class MessageDetailController {
                     { creatorId: userId },
                     { receiverId: userId },
                     { groupMembers: { $in: [userId] } }
-                ] 
+                ]
             })
 
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
-            if(conversation.newestMessageId === message.messageDetailId) {
+            if (conversation.newestMessageId === message.messageDetailId) {
                 await Conversation.findOneAndUpdate(
                     { conversationId: conversation.conversationId },
                     {
@@ -1546,6 +1641,9 @@ class MessageDetailController {
                 [],
                 `${user.fullname} đã ghim tin nhắn ${message.content}`
             )
+
+            const socketController = getSocketController();
+            socketController.emitPinMessage(conversation.conversationId, messageId, userId);
             res.json({ message: 'Message pinned successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -1605,9 +1703,9 @@ class MessageDetailController {
 
             await User.updateOne(
                 { userId: userId },
-                { lastActive: new Date() } 
+                { lastActive: new Date() }
             )
-            
+
             await notificationController.createNotification(
                 'UNPIN_MESSAGE',
                 message.conversationId,
@@ -1615,6 +1713,9 @@ class MessageDetailController {
                 [],
                 `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`
             )
+
+            const socketController = getSocketController();
+            socketController.emitUnpinMessage(conversation.conversationId, messageId, userId);
             res.json({ message: 'Message unpinned successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -1625,7 +1726,7 @@ class MessageDetailController {
         try {
             const userId = req.userId;
             const messageId = req.params.messageId;
-            const { content} = req.body;
+            const { content } = req.body;
             const user = await User.findOne({ userId });
 
             if (!user) {
@@ -1662,13 +1763,13 @@ class MessageDetailController {
                     await User.findOne({ userId: conversation.receiverId }) :
                     await User.findOne({ userId: conversation.creatorId });
 
-                    if (receiver.blockList?.includes(user.userId)) {
-                        return res.status(403).json({ message: 'You have been blocked by the recipient' });
-                    }
-    
-                    if (user.blockList?.includes(receiver.userId)) {
-                        return res.status(403).json({ message: 'You have blocked the recipient' });
-                    }
+                if (receiver.blockList?.includes(user.userId)) {
+                    return res.status(403).json({ message: 'You have been blocked by the recipient' });
+                }
+
+                if (user.blockList?.includes(receiver.userId)) {
+                    return res.status(403).json({ message: 'You have blocked the recipient' });
+                }
 
                 const isFriend = await FriendRequest.findOne({
                     $or: [
@@ -1729,6 +1830,9 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversation.conversationId, replyMessage, user);
+
             res.status(201).json(replyMessage);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -1740,7 +1844,7 @@ class MessageDetailController {
             const userId = req.userId;
             const user = await User.findOne({ userId });
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const conversationId = req.params.conversationId;
@@ -1750,11 +1854,11 @@ class MessageDetailController {
                     { creatorId: userId },
                     { receiverId: userId },
                     { groupMembers: { $in: [userId] } }
-                ] 
+                ]
             })
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' }); 
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
             await MessageDetail.updateMany(
@@ -1762,14 +1866,14 @@ class MessageDetailController {
                     conversationId,
                     senderId: { $ne: userId },
                     'readBy.userId': { $ne: userId }
-                }, 
+                },
                 {
                     $push: {
                         readBy: {
                             userId: userId,
                             readAt: new Date().toISOString()
                         }
-                    } 
+                    }
                 }
             )
 
@@ -1785,15 +1889,63 @@ class MessageDetailController {
                     arrayFilters: [{ 'elem.userId': userId }]
                 }
             );
-            
+
             await User.updateOne(
                 { userId: userId },
-                { lastActive: new Date() } 
+                { lastActive: new Date() }
             )
+
+            const socketController = getSocketController();
+            socketController.emitReadMessage(conversationId, {
+                userId: userId,
+                fullname: user.fullname,
+                avatar: user.urlavatar || null
+            });
 
             res.json({ message: 'Message marked as read successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async createNotification(type, conversationId, actorId, targetIds, content) {
+        try {
+            const notification = await MessageDetail.create({
+                messageDetailId: `notif-${conversationId}-${uuidv4()}`,
+                type: 'notification',
+                conversationId,
+                actorId,
+                targetIds,
+                createdAt: new Date().toISOString(),
+                content
+            });
+
+            await Conversation.findOneAndUpdate(
+                {
+                    conversationId,
+                    $or: [
+                        { 'lastMessage.createdAt': { $lt: notification.createdAt } },
+                        { lastMessage: null }
+                    ]
+                },
+                {
+                    newestMessageId: notification.notificationId,
+                    lastMessage: {
+                        content,
+                        type,
+                        senderId: null,
+                        createdAt: notification.createdAt
+                    },
+                    lastChange: notification.createdAt
+                }
+            );
+
+            const socketController = getSocketController();
+            socketController.emitNotification(conversationId, notification);
+
+            return notification;
+        } catch (error) {
+            console.error('Error creating notification:', error);
         }
     }
 }

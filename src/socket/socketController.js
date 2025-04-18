@@ -226,6 +226,18 @@ class SocketController {
         this.io.to(conversationId).emit('messageRecalled', { conversationId, messageId });
     }
 
+    emitPinMessage(conversationId, messageId) {
+        this.io.to(conversationId).emit('messagePinned', { conversationId, messageId });
+    }
+
+    emitUnpinMessage(conversationId, messageId) {
+        this.io.to(conversationId).emit('messageUnpinned', { conversationId, messageId }); 
+    }
+
+    emitReadMessage(conversationId, receiver) {
+        this.io.to(conversationId).emit('messageRead', { conversationId, receiver: {userId: receiver.userId , fullname: receiver.fullname, avatar: sender.avatar || null}, timestamp: new Date() });
+    }
+
     emitNotification(conversationId, notification) {
         this.io.to(conversationId).emit('newNotification', {
             conversationId,
