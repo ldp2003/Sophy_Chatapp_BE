@@ -1613,19 +1613,45 @@ class MessageDetailController {
                     pinnedAt: new Date().toISOString()
                 }
             );
+            
             await Conversation.updateOne(
-                { conversationId: message.conversationId },
+                { 
+                    conversationId: message.conversationId,
+                    'pinnedMessages.messageDetailId': messageId 
+                },
                 {
-                    pinnedMessages: {
-                        messageDetailId: messageId,
-                        content: message.content,
-                        type: message.type,
-                        senderId: message.senderId,
-                        pinnedAt: new Date().toISOString(),
-                        pinnedBy: userId
+                    $set: {
+                        'pinnedMessages.$': {
+                            messageDetailId: messageId,
+                            content: message.content,
+                            type: message.type,
+                            senderId: message.senderId,
+                            pinnedAt: new Date().toISOString(),
+                            pinnedBy: userId
+                        }
                     }
                 }
-            )
+            );
+
+            // Nếu không tìm thấy để cập nhật, thêm mới
+            await Conversation.updateOne(
+                { 
+                    conversationId: message.conversationId,
+                    'pinnedMessages.messageDetailId': { $ne: messageId }
+                },
+                {
+                    $push: {
+                        pinnedMessages: {
+                            messageDetailId: messageId,
+                            content: message.content,
+                            type: message.type,
+                            senderId: message.senderId,
+                            pinnedAt: new Date().toISOString(),
+                            pinnedBy: userId
+                        }
+                    }
+                }
+            );
 
             await User.updateOne(
                 { userId: userId },
