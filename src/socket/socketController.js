@@ -56,8 +56,6 @@ class SocketController {
                     userConversations.set(userId, new Set());
                 }
 
-                socket.join(`user_${userId}`);
-
                 console.log('User authenticated:', {
                     userId,
                     socketId: socket.id,
@@ -216,6 +214,15 @@ class SocketController {
                 avatar: sender.avatar || null
             }
         });
+        console.log('Emitted new message to conversation:', {
+            conversationId,
+            message: message,
+            sender: {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.avatar || null
+            } 
+        })
     }
 
     emitUserTyping(conversationId, userId, fullname) {
@@ -235,7 +242,7 @@ class SocketController {
     }
 
     emitReadMessage(conversationId, receiver) {
-        this.io.to(conversationId).emit('messageRead', { conversationId, receiver: {userId: receiver.userId , fullname: receiver.fullname, avatar: sender.avatar || null}, timestamp: new Date() });
+        this.io.to(conversationId).emit('messageRead', { conversationId, receiver: {userId: receiver.userId , fullname: receiver.fullname, avatar: receiver.avatar || null}, timestamp: new Date() });
     }
 
     emitNotification(conversationId, notification) {

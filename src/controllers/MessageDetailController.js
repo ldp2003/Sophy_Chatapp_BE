@@ -151,6 +151,7 @@ class MessageDetailController {
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
             });
+
             res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -322,15 +323,15 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
-            // const socketController = getSocketController();
-            // socketController.emitNewMessage(conversationId, {
-            //     ...message,
-            //     messageId: message.messageDetailId
-            // }, {
-            //     userId: sender.userId,
-            //     fullname: sender.fullname,
-            //     avatar: sender.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
@@ -508,15 +509,15 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
-            // const socketController = getSocketController();
-            // socketController.emitNewMessage(conversationId, {
-            //     ...message,
-            //     messageId: message.messageDetailId
-            // }, {
-            //     userId: sender.userId,
-            //     fullname: sender.fullname,
-            //     avatar: sender.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
@@ -663,15 +664,16 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
-            // const socketController = getSocketController();
-            // socketController.emitNewMessage(conversationId, {
-            //     ...message,
-            //     messageId: message.messageDetailId
-            // }, {
-            //     userId: sender.userId,
-            //     fullname: sender.fullname,
-            //     avatar: sender.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
+
             res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -767,12 +769,12 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
-            // const socketController = getSocketController();
-            // socketController.emitReadMessage(conversationId, {
-            //     userId: userId,
-            //     fullname: user.fullname,
-            //     avatar: user.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitReadMessage(conversationId, {
+                userId: userId,
+                fullname: user.fullname,
+                avatar: user.urlavatar || null
+            });
 
             // res.json({
             //     messages,
@@ -1013,15 +1015,15 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
-            // const socketController = getSocketController();
-            // socketController.emitNewMessage(conversationId, {
-            //     ...message,
-            //     messageId: message.messageDetailId
-            // }, {
-            //     userId: sender.userId,
-            //     fullname: sender.fullname,
-            //     avatar: sender.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
@@ -1194,15 +1196,15 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
-            // const socketController = getSocketController();
-            // socketController.emitNewMessage(conversationId, {
-            //     ...message,
-            //     messageId: message.messageDetailId
-            // }, {
-            //     userId: sender.userId,
-            //     fullname: sender.fullname,
-            //     avatar: sender.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
@@ -1390,15 +1392,15 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
-            // const socketController = getSocketController();
-            // socketController.emitNewMessage(conversationId, {
-            //     ...message,
-            //     messageId: message.messageDetailId
-            // }, {
-            //     userId: sender.userId,
-            //     fullname: sender.fullname,
-            //     avatar: sender.urlavatar || null
-            // });
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversationId, {
+                ...message,
+                messageId: message.messageDetailId
+            }, {
+                userId: sender.userId,
+                fullname: sender.fullname,
+                avatar: sender.urlavatar || null
+            });
 
             res.status(201).json(message);
         } catch (error) {
