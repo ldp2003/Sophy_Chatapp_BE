@@ -448,7 +448,7 @@ class MessageDetailController {
             const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content,
+                    content: attachment.name,
                     type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
@@ -604,8 +604,8 @@ class MessageDetailController {
             const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content,
-                    type,
+                    content: attachment.name,
+                    type: attachment.type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
@@ -1134,8 +1134,8 @@ class MessageDetailController {
             const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content,
-                    type,
+                    content: attachment.name,
+                    type: attachment.type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
@@ -1330,8 +1330,8 @@ class MessageDetailController {
             const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
-                    content,
-                    type,
+                    content: attachment.name,
+                    type: attachment.type,
                     senderId: sender.userId,
                     createdAt: message.createdAt
                 },
