@@ -767,12 +767,12 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
-            const socketController = getSocketController();
-            socketController.emitReadMessage(conversationId, {
-                userId: userId,
-                fullname: user.fullname,
-                avatar: user.urlavatar || null
-            });
+            // const socketController = getSocketController();
+            // socketController.emitReadMessage(conversationId, {
+            //     userId: userId,
+            //     fullname: user.fullname,
+            //     avatar: user.urlavatar || null
+            // });
 
             // res.json({
             //     messages,
