@@ -62,7 +62,21 @@ const schema = new mongoose.Schema({
         schema: {
             content: String,
             type: String,
-            senderId: String
+            senderId: String,
+            senderName: String,
+            attachment: {
+                type: Object,
+                schema: {
+                    type: String,
+                    url: String,
+                    downloadUrl: String,
+                    name: String,
+                    size: Number,
+                    duration: Number,
+                    thumbnail: String
+                },
+                default: null
+            }
         },
         default: null
     },

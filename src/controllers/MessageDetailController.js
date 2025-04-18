@@ -1816,7 +1816,7 @@ class MessageDetailController {
                 currentDate.getMinutes().toString().padStart(2, '0') +
                 currentDate.getSeconds().toString().padStart(2, '0');
             const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
-
+            const originalSender = await User.findOne({ userId: message.senderId });
             const replyMessage = await MessageDetail.create({
                 messageDetailId: messageDetailId,
                 senderId: userId,
@@ -1830,6 +1830,7 @@ class MessageDetailController {
                     content: message.content,
                     type: message.type,
                     senderId: message.senderId,
+                    senderName: originalSender.fullname,
                     attachment: message.attachment,
                 },
                 sendStatus: 'sent'
