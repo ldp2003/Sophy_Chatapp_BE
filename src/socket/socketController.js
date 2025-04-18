@@ -56,6 +56,8 @@ class SocketController {
                     userConversations.set(userId, new Set());
                 }
 
+                socket.join(`user_${userId}`);
+
                 console.log('User authenticated:', {
                     userId,
                     socketId: socket.id,

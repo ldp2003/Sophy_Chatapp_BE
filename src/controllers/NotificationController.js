@@ -2,18 +2,24 @@ const Notification = require('../models/Notification');
 const Conversation = require('../models/Conversation');
 const { v4: uuidv4 } = require('uuid');
 const { getSocketController } = require('../socket');
+const MessageDetail = require('../models/MessageDetail');
 
 class NotificationController {
     async createNotification(type, conversationId, actorId, targetIds, content) {
         try {
-            const notification = await Notification.create({
-                notificationId: `notif-${conversationId}-${uuidv4()}`,
-                type,
+            const notification = await MessageDetail.create({
+                messageDetailId: `notif-${conversationId}-${uuidv4()}`,
+                type: 'notification',
                 conversationId,
-                actorId,
-                targetIds,
+                content,
                 createdAt: new Date().toISOString(),
-                content
+                notification: {
+                    type: {
+                        notiType: type  
+                    },
+                    actorId: actorId,
+                    targetIds: targetIds
+                }
             });
 
             await Conversation.findOneAndUpdate(
@@ -25,10 +31,10 @@ class NotificationController {
                     ]
                 },
                 {
-                    newestMessageId: notification.notificationId,
+                    newestMessageId: notification.messageDetailId,
                     lastMessage: {
                         content,
-                        type,
+                        type: 'notification',
                         senderId: null,
                         createdAt: notification.createdAt
                     },
