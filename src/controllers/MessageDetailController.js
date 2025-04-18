@@ -1886,10 +1886,17 @@ class MessageDetailController {
                 return res.status(404).json({ message: 'Message not found' }); 
             }
 
-            const conversation = await User.findOne({ conversationId: conversationId });
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            });
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found' });
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
             if (!conversation.isGroup) {
