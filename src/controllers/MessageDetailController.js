@@ -724,6 +724,7 @@ class MessageDetailController {
             const messages = await MessageDetail.find(query)
                 .sort({ createdAt: direction === 'before' ? -1 : 1 })
                 .limit(limit)
+                .populate('replyData')
                 .lean();
 
 
@@ -810,7 +811,7 @@ class MessageDetailController {
                 return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
-            const messages = await MessageDetail.find({ conversationId: conversationId }).sort({ createdAt: -1 });
+            const messages = await MessageDetail.find({ conversationId: conversationId }).sort({ createdAt: -1 }).populate('replyData');
 
             await MessageDetail.updateMany(
                 {
@@ -1099,7 +1100,7 @@ class MessageDetailController {
                 url: uploadResponse.secure_url,
                 downloadUrl: uploadResponse.secure_url.replace('/upload/', '/upload/fl_attachment/'),
                 type: 'image',
-                name: imageBase64.split(',')[1],
+                name: 'placeholder',
                 size: uploadResponse.bytes,
             }
 
@@ -1826,13 +1827,6 @@ class MessageDetailController {
                 createdAt: new Date().toISOString(),
                 isReply: true,
                 messageReplyId: message.messageDetailId,
-                replyData: {
-                    content: message.content,
-                    type: message.type,
-                    senderId: message.senderId,
-                    senderName: originalSender.fullname,
-                    attachment: message.attachment,
-                },
                 sendStatus: 'sent'
             });
 

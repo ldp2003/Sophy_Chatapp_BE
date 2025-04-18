@@ -57,29 +57,6 @@ const schema = new mongoose.Schema({
         type: String,
         default: null,
     },
-    replyData: {
-        type: Object,
-        schema: {
-            content: String,
-            type: String,
-            senderId: String,
-            senderName: String,
-            attachment: {
-                type: Object,
-                schema: {
-                    type: String,
-                    url: String,
-                    downloadUrl: String,
-                    name: String,
-                    size: Number,
-                    duration: Number,
-                    thumbnail: String
-                },
-                default: null
-            }
-        },
-        default: null
-    },
     isPinned: {
         type: Boolean,
         default: false,
@@ -183,6 +160,17 @@ const schema = new mongoose.Schema({
         default: []
     },
 });
+
+schema.virtual('replyData', {
+    ref: 'MessageDetail',
+    localField: 'messageReplyId',
+    foreignField: 'messageDetailId',
+    justOne: true
+});
+
+// Đảm bảo virtuals được include khi chuyển đổi sang JSON
+schema.set('toJSON', { virtuals: true });
+schema.set('toObject', { virtuals: true });
 
 //const MessageDetail = dynamoose.model("MessageDetail", schema);
 const MessageDetail = mongoose.model('MessageDetail', schema);
