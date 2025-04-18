@@ -1835,7 +1835,7 @@ class MessageDetailController {
                 sendStatus: 'sent'
             });
 
-            await conversation.updateOne(
+            await Conversation.findOneAndUpdate(
                 { conversationId: message.conversationId },
                 {
                     newestMessageId: replyMessage.messageDetailId,
