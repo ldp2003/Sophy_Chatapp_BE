@@ -14,9 +14,7 @@ class NotificationController {
                 content,
                 createdAt: new Date().toISOString(),
                 notification: {
-                    type: {
-                        notiType: type  
-                    },
+                    notiType: type,
                     actorId: actorId,
                     targetIds: targetIds
                 }
