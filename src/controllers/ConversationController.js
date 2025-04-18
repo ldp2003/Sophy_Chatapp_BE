@@ -931,6 +931,61 @@ class ConversationController {
             res.status(500).json({ message: error.message });
         }
     }
+
+    async removeBackgroundMobile(req, res) {
+        try{
+            const { conversationId } = req.params;
+            const userId = req.userId;
+            const user = await User.findOne({ userId });
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ] 
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });  
+            }    
+
+            if (!conversation.background) {
+                return res.status(400).json({ message: 'Conversation does not have a background' }); 
+            }
+
+            const updatedConversation = await Conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { background: null },
+                { new: true }
+            );
+
+            if (!updatedConversation) {
+                return res.status(500).json({ message: 'Failed to remove background' });
+            }
+
+            const publicId = conversation.background.split('/').pop().split('.')[0];
+            await cloudinary.uploader.destroy(`conversations/${conversationId}/background/${publicId}`);
+
+            await notificationController.createNotification(
+                'REMOVE_BACKGROUND',
+                conversationId,
+                userId,
+                [],
+                `${user.fullname} đã xóa ảnh nền`
+            )
+
+            res.json({
+                message: 'Background removed successfully',
+                conversation: updatedConversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
 }
 
 module.exports = ConversationController;

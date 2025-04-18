@@ -25,7 +25,7 @@ const schema = new mongoose.Schema({
         schema: {
             type: {
                 notiType: String,
-                enum: ['ADD_MEMBER', 'REMOVE_MEMBER', 'LEAVE_GROUP', 'SET_OWNER', 'SET_CO_OWNER', 'REMOVE_CO_OWNER', 'UPDATE_GROUP_NAME', 'UPDATE_GROUP_AVATAR', 'UPDATE_BACKGROUND', 'DELETE_GROUP', 'PIN_MESSAGE', 'UNPIN_MESSAGE'],
+                enum: ['ADD_MEMBER', 'REMOVE_MEMBER', 'LEAVE_GROUP', 'SET_OWNER', 'SET_CO_OWNER', 'REMOVE_CO_OWNER', 'UPDATE_GROUP_NAME', 'UPDATE_GROUP_AVATAR', 'UPDATE_BACKGROUND', 'REMOVE_BACKGROUND', 'DELETE_GROUP', 'PIN_MESSAGE', 'UNPIN_MESSAGE'],
                 required: true
             },
             actorId: String,
