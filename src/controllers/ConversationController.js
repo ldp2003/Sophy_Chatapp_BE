@@ -627,7 +627,7 @@ class ConversationController {
             const currentUser = await User.findOne({ userId: currentUserId });
             const conversation = await Conversation.findOne({ conversationId });
 
-            if (!newName) {
+            if (!newName || newName.trim() === '') {
                 return res.status(400).json({ message: 'New name is empty' });
             }
 
@@ -715,7 +715,7 @@ class ConversationController {
             ).content;
 
             const uploadResponse = await cloudinary.uploader.upload(fileUri, {
-                folder: 'groupAvatars',
+                folder: 'conversations/${conversationId}/avatars',
                 transformation: [
                     { width: 500, height: 500, crop: 'fill' },
                     { quality: 'auto' }
@@ -731,18 +731,18 @@ class ConversationController {
                 );
 
                 if (!updatedConversation) {
-                    await cloudinary.uploader.destroy(`groupAvatars/${uploadResponse.public_id}`);
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatars/${uploadResponse.public_id}`);
                     return res.status(500).json({ message: 'Failed to update group avatar' });
                 }
             } catch (dbError) {
-                await cloudinary.uploader.destroy(`groupAvatars/${uploadResponse.public_id}`);
+                await cloudinary.uploader.destroy(`conversations/${conversationId}/avatars/${uploadResponse.public_id}`);
                 return res.status(500).json({ message: 'Failed to update group avatar in database' });
             }
 
             if (conversation.groupAvatarUrl && uploadResponse.secure_url) {
                 const publicId = conversation.groupAvatarUrl.split('/').pop().split('.')[0];
                 try {
-                    await cloudinary.uploader.destroy(`groupAvatars/${publicId}`);
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatars/${publicId}`);
                 } catch (error) {
                     console.error('Error deleting old group avatar:', error);
                 }
@@ -756,11 +756,6 @@ class ConversationController {
                 `${user.fullname} đã thay đổi ảnh đại diện nhóm`
             )
 
-            // io.to(conversationId).emit('groupAvatarUpdated', {
-            //     conversationId,
-            //     newAvatarUrl: uploadResponse.secure_url,
-            //     updatedBy: userId
-            // });
             res.json({
                 message: 'Group avatar updated successfully',
                 conversation: updatedConversation

@@ -1879,10 +1879,14 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
-            const socketController = getSocketController();
-            socketController.emitNewMessage(conversation.conversationId, replyMessage, user);
+            const newMessage = await MessageDetail.findOne({
+                messageDetailId: replyMessage.messageDetailId
+            }).populate('replyData');
 
-            res.status(201).json(replyMessage);
+            const socketController = getSocketController();
+            socketController.emitNewMessage(conversation.conversationId, newMessage, user);
+
+            res.status(201).json(newMessage);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
