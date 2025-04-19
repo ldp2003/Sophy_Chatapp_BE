@@ -1659,12 +1659,27 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
+            let notificationContent = '';
+            if(message.type==='text'){
+                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`;
+            }else if (message.type === 'text-with-image') {
+                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn hình ảnh ${message.content}`;
+            }else if (message.type === 'image') {
+                notificationContent = `${user.fullname} đã bỏ ghim hình ảnh`;
+            }else if (message.type === 'video') {
+                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+            }else if (message.type === 'file') {
+                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+            } else {
+                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn`;
+            }
+
             await notificationController.createNotification(
                 'PIN_MESSAGE',
                 message.conversationId,
                 userId,
                 [],
-                `${user.fullname} đã ghim tin nhắn ${message.content}`
+                notificationContent
             )
 
             const socketController = getSocketController();
@@ -1731,12 +1746,27 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
+            let notificationContent = '';
+            if(message.type==='text'){
+                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`;
+            }else if (message.type === 'text-with-image') {
+                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn hình ảnh ${message.content}`;
+            }else if (message.type === 'image') {
+                notificationContent = `${user.fullname} đã bỏ ghim hình ảnh`;
+            }else if (message.type === 'video') {
+                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+            }else if (message.type === 'file') {
+                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+            } else {
+                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn`;
+            }
+
             await notificationController.createNotification(
                 'UNPIN_MESSAGE',
                 message.conversationId,
                 userId,
                 [],
-                `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`
+                notificationContent
             )
 
             const socketController = getSocketController();
@@ -1817,7 +1847,7 @@ class MessageDetailController {
                 currentDate.getMinutes().toString().padStart(2, '0') +
                 currentDate.getSeconds().toString().padStart(2, '0');
             const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
-            const originalSender = await User.findOne({ userId: message.senderId });
+            
             const replyMessage = await MessageDetail.create({
                 messageDetailId: messageDetailId,
                 senderId: userId,

@@ -166,6 +166,29 @@ const schema = new mongoose.Schema({
     }
 });
 
+schema.pre('deleteOne', { document: true, query: false }, async function(next) {
+    try {
+        const MessageDetail = require('./MessageDetail');
+        await MessageDetail.deleteMany({ conversationId: this.conversationId });
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+schema.pre('deleteMany', async function(next) {
+    try {
+        const MessageDetail = require('./MessageDetail');
+        const conversations = await this.model.find(this.getQuery());
+        const conversationIds = conversations.map(conv => conv.conversationId);
+        await MessageDetail.deleteMany({ conversationId: { $in: conversationIds } });
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 //const Conversation = dynamoose.model("Conversation", schema);
 const Conversation = mongoose.model('Conversation', schema);
 
