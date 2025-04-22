@@ -122,6 +122,7 @@ class ConversationController {
                         groupName: conversation.groupName,
                         groupMembers: conversation.groupMembers,
                         isGroup: true,
+                        rules: conversation.rules,
                         createdAt: conversation.createdAt,
                     });
                 }

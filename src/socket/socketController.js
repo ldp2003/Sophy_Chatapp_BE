@@ -216,15 +216,6 @@ class SocketController {
                 avatar: sender.avatar || null
             }
         });
-        console.log('Emitted new message to conversation:', {
-            conversationId,
-            message: message,
-            sender: {
-                userId: sender.userId,
-                fullname: sender.fullname,
-                avatar: sender.avatar || null
-            } 
-        })
     }
 
     emitUserTyping(conversationId, userId, fullname) {
