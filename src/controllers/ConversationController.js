@@ -547,6 +547,7 @@ class ConversationController {
             }
 
             conversation.isDeleted = true;
+            conversation.deletedAt = new Date().toISOString();
 
             if (!conversation.formerMembers) {
                 conversation.formerMembers = [];
