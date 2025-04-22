@@ -276,6 +276,7 @@ class ConversationController {
                     conversation.formerMembers.push(userId);
                 }
 
+                conversation.markModified('rules.coOwnerIds');
                 await conversation.save();
 
                 await notificationController.createNotification(
@@ -373,6 +374,7 @@ class ConversationController {
                 }
             }
 
+            conversation.markModified('rules.coOwnerIds');
             await conversation.save();
 
             const coOwnerUsers = await User.find({ userId: { $in: coOwnerIds } });
@@ -432,6 +434,8 @@ class ConversationController {
             }
 
             conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
+
+            conversation.markModified('rules.coOwnerIds');
             await conversation.save();
 
             await notificationController.createNotification(
@@ -487,6 +491,13 @@ class ConversationController {
             }
 
             conversation.rules.ownerId = userId;
+            
+            if(conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId)) {
+                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id!== userId);
+            }
+
+            conversation.markModified('rules.ownerId');
+            conversation.markModified('rules.coOwnerIds');
             await conversation.save();
 
             await notificationController.createNotification(
@@ -601,6 +612,11 @@ class ConversationController {
                 conversation.formerMembers.push(currentUserId);
             }
 
+            if(conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId)) {
+                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id!== currentUserId); 
+            }
+
+            conversation.markModified('rules.coOwnerIds');
             await conversation.save();
 
             await notificationController.createNotification(
