@@ -183,7 +183,7 @@ class ConversationController {
 
     async addUserToGroup(req, res) {
         try {
-            const { conversationId, userId } = req.body;
+            const { conversationId, userId } = req.params;
             const currentUserId = req.userId
             const user = await User.findOne({ userId: userId })
             const conversation = await Conversation.findOne({ conversationId });
@@ -229,7 +229,7 @@ class ConversationController {
 
     async removeUserFromGroup(req, res) {
         try {
-            const { conversationId, userId } = req.body;
+            const { conversationId, userId } = req.params;
             const currentUserId = req.userId;
             const user = await User.findOne({ userId: userId })
             const conversation = await Conversation.findOne({ conversationId });
@@ -399,7 +399,7 @@ class ConversationController {
 
     async removeCoOwner(req, res) {
         try {
-            const { conversationId, userId } = req.body;
+            const { conversationId, userId } = req.params;
             const currentUserId = req.userId;
             const conversation = await Conversation.findOne({ conversationId });
             const currentUser = await User.findOne({ userId: currentUserId });
@@ -457,7 +457,8 @@ class ConversationController {
 
     async setOwner(req, res) {
         try {
-            const { conversationId, userId } = req.body;
+            const { conversationId } = req.body;
+            const { userId } = req.params;
             const currentUserId = req.userId;
             const conversation = await Conversation.findOne({ conversationId });
             const currentUser = await User.findOne({ userId: currentUserId });
@@ -519,7 +520,7 @@ class ConversationController {
 
     async deleteGroup(req, res) {
         try {
-            const { conversationId } = req.body;
+            const { conversationId } = req.params;
             const currentUserId = req.userId;
             const conversation = await Conversation.findOne({ conversationId });
             const currentUser = await User.findOne({ userId: currentUserId });
@@ -580,7 +581,7 @@ class ConversationController {
 
     async leaveGroup(req, res) {
         try {
-            const { conversationId } = req.body;
+            const { conversationId } = req.params;
             const currentUserId = req.userId;
             const conversation = await Conversation.findOne({ conversationId });
             const currentUser = await User.findOne({ userId: currentUserId });
