@@ -225,11 +225,28 @@ class ConversationController {
                 }
             }
 
+            const socketController = getSocketController();
+
             conversation.groupMembers.push(userId);
             if (conversation.blocked && conversation.blocked.includes(userId)) {
                 conversation.blocked = conversation.blocked.filter(id => id !== userId);
+                socketController.emitUnblockUser(conversation.conversationId, userId);
             }
             await conversation.save();
+
+            
+            socketController.emitNewConversation(userId, {
+                conversationId: conversation.conversationId,
+                creatorId: conversation.creatorId,
+                groupName: conversation.groupName,
+                groupMembers: conversation.groupMembers,
+                isGroup: true,
+                rules: conversation.rules,
+                lastMessage: conversation.lastMessage,
+                createdAt: conversation.createdAt,
+            });
+
+            socketController.emitJoinGroup(conversation.conversationId, userId);
 
             await notificationController.createNotification(
                 'ADD_MEMBER',
@@ -279,6 +296,7 @@ class ConversationController {
             const isCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId);
             const targetIsOwner = conversation.rules.ownerId === userId;
             const targetIsCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId);
+            const socketController = getSocketController();
 
             if (isOwner) {
                 conversation.groupMembers = conversation.groupMembers.filter(memberId => memberId !== userId);
@@ -296,6 +314,8 @@ class ConversationController {
 
                 conversation.markModified('rules.coOwnerIds');
                 await conversation.save();
+
+                socketController.emitLeaveGroup(conversation.conversationId, userId);
 
                 await notificationController.createNotification(
                     'REMOVE_MEMBER',
@@ -326,6 +346,7 @@ class ConversationController {
                 }
 
                 await conversation.save();
+                socketController.emitLeaveGroup(conversation.conversationId, userId);
 
                 await notificationController.createNotification(
                     'REMOVE_MEMBER',
@@ -386,6 +407,9 @@ class ConversationController {
                 conversation.rules.coOwnerIds = [];
             }
 
+            const newCoOwnerIds = coOwnerIds.filter(id => !conversation.rules.coOwnerIds.includes(id));
+            console.log(newCoOwnerIds);
+
             for (const userId of coOwnerIds) {
                 if (!conversation.rules.coOwnerIds.includes(userId)) {
                     conversation.rules.coOwnerIds.push(userId);
@@ -394,6 +418,9 @@ class ConversationController {
 
             conversation.markModified('rules.coOwnerIds');
             await conversation.save();
+
+            const socketController = getSocketController();
+            socketController.emitSetNewCoOwner(conversation.conversationId, newCoOwnerIds);
 
             const coOwnerUsers = await User.find({ userId: { $in: coOwnerIds } });
             const coOwnerNames = coOwnerUsers.map(user => user.fullname).join(', ');
@@ -455,6 +482,9 @@ class ConversationController {
 
             conversation.markModified('rules.coOwnerIds');
             await conversation.save();
+
+            const socketController = getSocketController();
+            socketController.emitRemoveCoOwner(conversation.conversationId, userId);
 
             await notificationController.createNotification(
                 'REMOVE_CO_OWNER',
@@ -519,6 +549,9 @@ class ConversationController {
             conversation.markModified('rules.coOwnerIds');
             await conversation.save();
 
+            const socketController = getSocketController();
+            socketController.emitNewOwner(conversation.conversationId, userId);
+
             await notificationController.createNotification(
                 'SET_OWNER',
                 conversationId,
@@ -582,6 +615,9 @@ class ConversationController {
 
             await conversation.save();
 
+            const socketController = getSocketController();
+            socketController.emitDeleteGroup(conversation.conversationId);
+
             await notificationController.createNotification(
                 'DELETE_GROUP',
                 conversationId,
@@ -638,6 +674,9 @@ class ConversationController {
 
             conversation.markModified('rules.coOwnerIds');
             await conversation.save();
+
+            const socketController = getSocketController();
+            socketController.emitLeaveGroup(conversation.conversationId, currentUserId);
 
             await notificationController.createNotification(
                 'LEAVE_GROUP',
@@ -703,7 +742,6 @@ class ConversationController {
                 conversation.blocked.push(userId);
             }
 
-            // Remove blocked user from groupMembers and coOwnerIds if applicable
             if (conversation.groupMembers.includes(userId)) {
                 conversation.groupMembers = conversation.groupMembers.filter(id => id !== userId);
             }
@@ -714,6 +752,9 @@ class ConversationController {
             }
 
             await conversation.save();
+
+            const socketController = getSocketController();
+            socketController.emitBlockUser(conversation.conversationId, userId);
 
             await notificationController.createNotification(
                 'BLOCK_USER',
@@ -778,6 +819,9 @@ class ConversationController {
 
             await conversation.save();
 
+            const socketController = getSocketController();
+            socketController.emitUnblockUser(conversation.conversationId, userId);
+
             await notificationController.createNotification(
                 'UNBLOCK_USER',
                 conversationId,
@@ -837,6 +881,9 @@ class ConversationController {
                 { groupName: newName },
                 { new: true }
             );
+
+            const socketController = getSocketController();
+            socketController.emitNewGroupName(conversation.conversationId, newName);
 
             await notificationController.createNotification(
                 'UPDATE_GROUP_NAME',
@@ -923,6 +970,9 @@ class ConversationController {
                     console.error('Error deleting old group avatar:', error);
                 }
             }
+
+            const socketController = getSocketController();
+            socketController.emitNewGroupAvatar(conversation.conversationId, uploadResponse.secure_url);
 
             await notificationController.createNotification(
                 'UPDATE_GROUP_AVATAR',
@@ -1077,6 +1127,10 @@ class ConversationController {
                     console.error('Error deleting old avatar:', error); 
                 }
             }
+
+            const socketController = getSocketController();
+            socketController.emitNewGroupAvatar(conversation.conversationId, uploadResponse.secure_url);
+
             await notificationController.createNotification(
                 'UPDATE_GROUP_AVATAR',
                 conversationId,

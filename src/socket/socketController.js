@@ -270,10 +270,8 @@ class SocketController {
     }
 
     handleReconnect(socket, userId) {
-        // Restore user's socket mapping
         userSockets.set(userId, socket.id);
 
-        // Restore conversations if they exist
         if (userConversations.has(userId)) {
             const conversations = userConversations.get(userId);
             conversations.forEach(convId => {
@@ -326,6 +324,76 @@ class SocketController {
 
     emitReadMessage(conversationId, receiver) {
         this.io.to(conversationId).emit('messageRead', { conversationId, receiver: { userId: receiver.userId, fullname: receiver.fullname, avatar: receiver.avatar || null }, timestamp: new Date() });
+    }
+
+    emitJoinGroup(conversationId, userId) {
+        this.io.to(conversationId).emit('userJoinedGroup', { conversationId, userId }); 
+    }
+
+    emitLeaveGroup(conversationId, userId) {
+        this.io.to(conversationId).emit('userLeftGroup', { conversationId, userId });
+
+        const userSocket = userSockets.get(userId);
+        if (userSocket) {
+            const socket = this.io.sockets.sockets.get(userSocket);
+            if (socket) {
+                socket.leave(conversationId);
+            }
+        }
+        
+        const userConvSet = userConversations.get(userId);
+        if (userConvSet) {
+            userConvSet.delete(conversationId);
+        }
+    }
+
+    emitNewGroupName(conversationId, newName) {
+        this.io.to(conversationId).emit('groupNameChanged', { conversationId, newName }); 
+    }
+
+    emitNewGroupAvatar(conversationId, newAvatar) {
+        this.io.to(conversationId).emit('groupAvatarChanged', { conversationId, newAvatar }); 
+    }
+
+    emitNewOwner(conversationId, newOwner) {
+        this.io.to(conversationId).emit('groupOwnerChanged', { conversationId, newOwner });
+    }
+
+    emitSetNewCoOwner(conversationId, newCoOwnerIds) {
+        this.io.to(conversationId).emit('groupCoOwnerAdded', { conversationId, newCoOwnerIds }); 
+    }
+
+    emitRemoveCoOwner(conversationId, removedCoOwner) {
+        this.io.to(conversationId).emit('groupCoOwnerRemoved', { conversationId, removedCoOwner });
+    }
+
+    emitLeaveGroup(conversationId, userId) {
+        this.io.to(conversationId).emit('userLeftGroup', { conversationId, userId });
+    }
+
+    emitDeleteGroup(conversationId) {
+        this.io.to(conversationId).emit('groupDeleted', { conversationId });
+    }
+
+    emitBlockUser(conversationId, blockedUserId) {
+        this.io.to(conversationId).emit('userBlocked', { conversationId, blockedUserId });
+
+        const userSocket = userSockets.get(blockedUserId);
+        if (userSocket) {
+            const socket = this.io.sockets.sockets.get(userSocket);
+            if (socket) {
+                socket.leave(conversationId);
+            }
+        }
+        
+        const userConvSet = userConversations.get(blockedUserId);
+        if (userConvSet) {
+            userConvSet.delete(conversationId);
+        }
+    }
+
+    emitUnblockUser(conversationId, unblockedUserId) {
+        this.io.to(conversationId).emit('userUnblocked', { conversationId, unblockedUserId });
     }
 
     emitNotification(conversationId, notification) {
