@@ -1150,6 +1150,31 @@ class ConversationController {
             res.status(500).json({ message: error.message });
         }
     }
+
+    async getSameGroups(req, res) {
+        try {
+            const userId = req.userId;
+            const user = await User.findOne({ userId }).select('-password');
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            const targetUserId = req.params.userId;
+            const targetUser = await User.findOne({ userId: targetUserId }).select('-password -deviceTokens -blockList -createdAt');
+            if (!targetUser) {
+                return res.status(404).json({ message: 'Target user not found' });
+            }
+
+            const conversations = await Conversation.find({
+                groupMembers:{
+                    $all: [userId, targetUserId]
+                }
+            });
+
+            res.json(conversations);
+        }  catch (error) {
+            res.status(500).json({ message: error.message }); 
+        }
+    }
 }
 
 module.exports = ConversationController;

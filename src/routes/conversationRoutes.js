@@ -24,5 +24,6 @@ router.put('/group/update/avatar/:conversationId', auth, uploadImage.single('gro
 router.put('/update/background/:conversationId', auth, uploadImage.single('background'), conversationController.updateBackground.bind(conversationController));
 router.put('/mobile/update/background/:conversationId', auth, conversationController.updateBackgroundMobile.bind(conversationController));
 router.put('/mobile/update/background/remove/:conversationId', auth, conversationController.removeBackgroundMobile.bind(conversationController));
+router.get('/get-same-groups/:userId', auth, conversationController.getSameGroups.bind(conversationController));
 
 module.exports = router;
