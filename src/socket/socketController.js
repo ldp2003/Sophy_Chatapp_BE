@@ -2,6 +2,10 @@ const User = require('../models/User');
 const userSockets = new Map();
 const userConversations = new Map();
 const qrLoginSessions = new Map();
+const { generateToken04 } = require('../utils/zegoServerAssistant');
+
+const appID = process.env.ZEGO_APP_ID;
+const serverSecret = process.env.ZEGO_SERVER_SECRET;
 
 class SocketController {
     constructor(io) {
@@ -58,6 +62,35 @@ class SocketController {
 
                 socket.join(`user_${userId}`);
 
+                const effectiveTimeInSeconds = 3600; // Token valid for 1 hour
+                const payload = {
+                    room_id: '',
+                    privilege: {
+                        1: 1,   // Login privilege
+                        2: 1    // Stream privilege
+                    },
+                    stream_id_list: null
+                };
+
+                try {
+                    const token = generateToken04(
+                        appID,
+                        userId,
+                        serverSecret,
+                        effectiveTimeInSeconds,
+                        payload
+                    );
+
+                    socket.emit('zegoToken', {
+                        token,
+                        appID,
+                        userId,
+                        effectiveTimeInSeconds
+                    });
+                } catch (error) {
+                    console.error('Failed to generate Zego token:', error);
+                }
+
                 console.log('User authenticated:', {
                     userId,
                     socketId: socket.id,
@@ -91,6 +124,36 @@ class SocketController {
                     isIntentional: socket.isIntentionalDisconnect || false,
                     remainingConnections: this.activeConnections.size
                 });
+            });
+
+            socket.on('refreshZegoToken', () => {
+                if (!socket.userId) return;
+
+                try {
+                    const token = generateToken04(
+                        appID,
+                        socket.userId,
+                        serverSecret,
+                        3600,
+                        {
+                            room_id: '',
+                            privilege: {
+                                1: 1,
+                                2: 1
+                            },
+                            stream_id_list: null
+                        }
+                    );
+
+                    socket.emit('zegoToken', {
+                        token,
+                        appID,
+                        userId: socket.userId,
+                        effectiveTimeInSeconds: 3600
+                    });
+                } catch (error) {
+                    console.error('Failed to refresh Zego token:', error);
+                }
             });
 
             socket.on('initQrLogin', (qrToken) => {
