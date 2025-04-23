@@ -2,6 +2,7 @@ const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
 const cloudinary = require('../config/cloudinary');
 const DatauriParser = require('datauri/parser');
+const Conversation = require('../models/Conversation');
 const parser = new DatauriParser();
 
 class UserController {
@@ -56,12 +57,12 @@ class UserController {
 
     async searchUsersByArrayPhone(req, res) {
         try {
-            const { phones }= req.body;
+            const { phones } = req.body;
             const users = await User.find({ phone: { $in: phones } }).select('-password -deviceTokens -createdAt -blockList');
 
             res.json(users);
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
     async getProfileById(req, res) {
@@ -129,9 +130,9 @@ class UserController {
             );
 
             res.json({ message: 'Friend removed successfully' });
-        } 
+        }
         catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -253,8 +254,8 @@ class UserController {
             }
 
             const updatedUser = await User.findOneAndUpdate(
-                { userId }, 
-                updateFields, 
+                { userId },
+                updateFields,
                 { new: true }
             ).select('-password');
 
@@ -288,12 +289,12 @@ class UserController {
             if (!imageBase64.startsWith('data:image')) {
                 return res.status(400).json({ message: 'Invalid image format' });
             }
-             
+
             const userId = req.userId;
-            const user = await User.findOne({ userId }); 
+            const user = await User.findOne({ userId });
 
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
@@ -303,7 +304,7 @@ class UserController {
                     { quality: 'auto' }
                 ]
             });
-            
+
             const updatedUser = await User.findOneAndUpdate(
                 { userId },
                 { urlavatar: uploadResponse.secure_url, lastActive: new Date() },
@@ -359,7 +360,7 @@ class UserController {
                 updateFields,
                 { new: true }
             ).select('-password');
-            
+
             await User.updateOne(
                 { userId: userId },
                 { lastActive: new Date() }
@@ -390,19 +391,19 @@ class UserController {
             }
 
             if (currentUser.blockList.includes(blockingUserId)) {
-                return res.status(400).json({ message: 'User already blocked' }); 
+                return res.status(400).json({ message: 'User already blocked' });
             }
 
             if (currentUser.friendList.includes(blockingUserId)) {
                 await User.findOneAndUpdate({ userId }, { $pull: { friendList: blockingUserId } }, { new: true });
             }
 
-            if(blockingUser.friendList.includes(userId)) {
-                await User.findOneAndUpdate({ userId: blockingUserId }, { $pull: { friendList: userId } }, { new: true }); 
+            if (blockingUser.friendList.includes(userId)) {
+                await User.findOneAndUpdate({ userId: blockingUserId }, { $pull: { friendList: userId } }, { new: true });
             }
-            
+
             const user = await User.findOneAndUpdate({ userId }, { $addToSet: { blockList: blockingUserId } }, { new: true }).select('-password');
-            
+
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
@@ -433,7 +434,7 @@ class UserController {
             }
 
             if (!currentUser.blockList.includes(blockedUserId)) {
-                return res.status(400).json({ message: 'User is not blocked' });  
+                return res.status(400).json({ message: 'User is not blocked' });
             }
 
             const user = await User.findOneAndUpdate({ userId }, { $pull: { blockList: blockedUserId } }, { new: true }).select('-password');
@@ -449,6 +450,31 @@ class UserController {
             res.json(user);
         } catch (error) {
             res.status(500).json({ message: error.message });
+        }
+    }
+
+    async countSameGroup(req, res) {
+        try {
+            const userId = req.userId;
+            const user = await User.findOne({ userId }).select('-password');
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            const targetUserId = req.params.userId;
+            const targetUser = await User.findOne({ userId: targetUserId }).select('-password');
+            if (!targetUser) {
+                return res.status(404).json({ message: 'Target user not found' });
+            }
+
+            const conversations = await Conversation.find({
+                groupMembers:{
+                    $all: [userId, targetUserId]
+                }
+            });
+
+            res.json(conversations);
+        }  catch (error) {
+            res.status(500).json({ message: error.message }); 
         }
     }
 }

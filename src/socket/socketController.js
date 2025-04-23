@@ -165,6 +165,32 @@ class SocketController {
                 });
             });
 
+            socket.on('startCall', (data) => {
+                const { conversationId, roomID, callerId, receiverId, isVideo } = data;
+                console.log(`Start call from ${callerId} to ${receiverId}, room: ${roomID}`);
+
+                const receiverSocketId = userSockets.get(receiverId);
+                if (receiverSocketId) {
+                    this.io.to(receiverSocketId).emit('startCall', {
+                        conversationId,
+                        roomID,
+                        callerId,
+                        isVideo,
+                    });
+                } else {
+                    console.warn(`Receiver ${receiverId} not online`);
+                    socket.emit('callError', { message: 'Người nhận không trực tuyến.' });
+                }
+            });
+
+            socket.on('endCall', (data) => {
+                const { conversationId, receiverId } = data;
+                const receiverSocketId = userSockets.get(receiverId);
+                if (receiverSocketId) {
+                    this.io.to(receiverSocketId).emit('endCall', { conversationId });
+                }
+            });
+
             socket.on('scanQrLogin', async ({ qrToken, userId }) => {
                 const session = qrLoginSessions.get(qrToken);
                 if (session) {
@@ -213,7 +239,7 @@ class SocketController {
                 }
 
                 const userConvSet = userConversations.get(userId);
-                
+
                 // Clear existing conversations
                 if (userConvSet) {
                     userConvSet.forEach(convId => {
@@ -295,11 +321,11 @@ class SocketController {
     }
 
     emitUnpinMessage(conversationId, messageId) {
-        this.io.to(conversationId).emit('messageUnpinned', { conversationId, messageId }); 
+        this.io.to(conversationId).emit('messageUnpinned', { conversationId, messageId });
     }
 
     emitReadMessage(conversationId, receiver) {
-        this.io.to(conversationId).emit('messageRead', { conversationId, receiver: {userId: receiver.userId , fullname: receiver.fullname, avatar: receiver.avatar || null}, timestamp: new Date() });
+        this.io.to(conversationId).emit('messageRead', { conversationId, receiver: { userId: receiver.userId, fullname: receiver.fullname, avatar: receiver.avatar || null }, timestamp: new Date() });
     }
 
     emitNotification(conversationId, notification) {
@@ -333,7 +359,7 @@ class SocketController {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('acceptedFriendRequest', {
-               friendRequestData,
+                friendRequestData,
                 timestamp: new Date()
             });
         }
@@ -343,7 +369,7 @@ class SocketController {
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
             this.io.to(receiverSocketId).emit('retrievedFriendRequest', {
-               friendRequestData,
+                friendRequestData,
                 timestamp: new Date()
             });
         }

@@ -13,7 +13,7 @@ const schema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['ADD_MEMBER', 'REMOVE_MEMBER', 'LEAVE_GROUP', 'SET_OWNER', 'SET_CO_OWNER', 'REMOVE_CO_OWNER', 'UPDATE_GROUP_NAME', 'UPDATE_GROUP_AVATAR', 'UPDATE_BACKGROUND', 'DELETE_GROUP', 'PIN_MESSAGE', 'UNPIN_MESSAGE'],
+        enum: ['ADD_MEMBER', 'REMOVE_MEMBER', 'LEAVE_GROUP', 'SET_OWNER', 'SET_CO_OWNER', 'REMOVE_CO_OWNER', 'UPDATE_GROUP_NAME', 'UPDATE_GROUP_AVATAR', 'UPDATE_BACKGROUND', 'DELETE_GROUP', 'PIN_MESSAGE', 'UNPIN_MESSAGE', 'BLOCK_USER', 'UNBLOCK_USER'],
         required: true
     },
     actorId: String,      // ai làm

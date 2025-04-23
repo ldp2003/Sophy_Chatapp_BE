@@ -115,7 +115,7 @@ class ConversationController {
 
             const socketController = getSocketController();
             groupMembers.forEach(memberId => {
-                if (memberId !== creatorId) { 
+                if (memberId !== creatorId) {
                     socketController.emitNewConversation(memberId, {
                         conversationId: conversation.conversationId,
                         creatorId: conversation.creatorId,
@@ -184,10 +184,10 @@ class ConversationController {
     async addUserToGroup(req, res) {
         try {
             const { conversationId, userId } = req.params;
-            const currentUserId = req.userId
-            const user = await User.findOne({ userId: userId })
+            const currentUserId = req.userId;
+            const user = await User.findOne({ userId: userId });
             const conversation = await Conversation.findOne({ conversationId });
-            const currentUser = await User.findOne({ userId: currentUserId })
+            const currentUser = await User.findOne({ userId: currentUserId });
 
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
@@ -195,7 +195,6 @@ class ConversationController {
             if (!currentUser) {
                 return res.status(404).json({ message: 'CurrentUser not found' });
             }
-
             if (!conversation) {
                 return res.status(404).json({ message: 'Conversation not found' });
             }
@@ -210,7 +209,19 @@ class ConversationController {
                 return res.status(400).json({ message: 'User is already a member of this group' });
             }
 
+            if (conversation.blocked && conversation.blocked.includes(userId)) {
+                const isOwner = conversation.rules.ownerId === currentUserId;
+                const isCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId);
+
+                if (!isOwner && !isCoOwner) {
+                    return res.status(403).json({ message: 'Only owner and co-owners can add blocked users to the group' });
+                }
+            }
+
             conversation.groupMembers.push(userId);
+            if (conversation.blocked && conversation.blocked.includes(userId)) {
+                conversation.blocked = conversation.blocked.filter(id => id !== userId);
+            }
             await conversation.save();
 
             await notificationController.createNotification(
@@ -492,9 +503,9 @@ class ConversationController {
             }
 
             conversation.rules.ownerId = userId;
-            
-            if(conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId)) {
-                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id!== userId);
+
+            if (conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId)) {
+                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
             }
 
             conversation.markModified('rules.ownerId');
@@ -614,8 +625,8 @@ class ConversationController {
                 conversation.formerMembers.push(currentUserId);
             }
 
-            if(conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId)) {
-                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id!== currentUserId); 
+            if (conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId)) {
+                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== currentUserId);
             }
 
             conversation.markModified('rules.coOwnerIds');
@@ -631,6 +642,145 @@ class ConversationController {
 
             res.json({
                 message: 'You have left the group successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async blockUserFromGroup(req, res) {
+        try {
+            const { conversationId, userId } = req.params;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+            const targetUser = await User.findOne({ userId: userId });
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!targetUser) {
+                return res.status(404).json({ message: 'TargetUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+
+            const isOwner = conversation.rules.ownerId === currentUserId;
+            const isCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId);
+            const targetIsCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId);
+
+            if (!isOwner && !isCoOwner) {
+                return res.status(403).json({ message: 'Only owner and co-owners can block users from the group' });
+            }
+
+            if (targetIsCoOwner && !isOwner) {
+                return res.status(403).json({ message: 'Only owner can block co-owners' });
+            }
+
+            if (!conversation.blocked) {
+                conversation.blocked = [];
+            }
+
+            if (!conversation.blocked.includes(userId)) {
+                conversation.blocked.push(userId);
+            }
+
+            // Remove blocked user from groupMembers and coOwnerIds if applicable
+            if (conversation.groupMembers.includes(userId)) {
+                conversation.groupMembers = conversation.groupMembers.filter(id => id !== userId);
+            }
+
+            if (conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId)) {
+                conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
+                conversation.markModified('rules.coOwnerIds');
+            }
+
+            await conversation.save();
+
+            await notificationController.createNotification(
+                'BLOCK_USER',
+                conversationId,
+                currentUserId,
+                [userId],
+                `${currentUser.fullname} đã chặn ${targetUser.fullname} khỏi nhóm`
+            )
+
+            res.json({
+                message: 'User blocked successfully',
+                conversation: conversation
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async unblockUserFromGroup(req, res) {
+        try {
+            const { conversationId, userId } = req.params;
+            const currentUserId = req.userId;
+            const conversation = await Conversation.findOne({ conversationId });
+            const currentUser = await User.findOne({ userId: currentUserId });
+            const targetUser = await User.findOne({ userId: userId });
+
+            if (!currentUser) {
+                return res.status(404).json({ message: 'CurrentUser not found' });
+            }
+            if (!targetUser) {
+                return res.status(404).json({ message: 'TargetUser not found' });
+            }
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found' });
+            }
+            if (!conversation.isGroup) {
+                return res.status(400).json({ message: 'This is not a group conversation' });
+            }
+            if (!conversation.groupMembers.includes(currentUserId)) {
+                return res.status(403).json({ message: 'You are not a member of this group' });
+            }
+            if (!conversation.rules) {
+                return res.status(400).json({ message: 'Group rules not defined' });
+            }
+
+            const isOwner = conversation.rules.ownerId === currentUserId;
+            const isCoOwner = conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(currentUserId);
+
+            if (!isOwner && !isCoOwner) {
+                return res.status(403).json({ message: 'Only owner and co-owners can unblock users from the group' });
+            }
+
+            if (!conversation.blocked) {
+                return res.status(400).json({ message: 'No users are blocked in this group' });
+            }
+
+            if (!conversation.blocked.includes(userId)) {
+                return res.status(400).json({ message: 'User is not blocked in this group' });
+            }
+
+            conversation.blocked = conversation.blocked.filter(id => id !== userId);
+
+            await conversation.save();
+
+            await notificationController.createNotification(
+                'UNBLOCK_USER',
+                conversationId,
+                currentUserId,
+                [userId],
+                `${currentUser.fullname} đã bỏ chặn ${targetUser.fullname} khỏi nhóm`
+            )
+
+            res.json({
+                message: 'User unblocked successfully',
                 conversation: conversation
             });
         } catch (error) {
@@ -947,7 +1097,7 @@ class ConversationController {
     }
 
     async removeBackgroundMobile(req, res) {
-        try{
+        try {
             const { conversationId } = req.params;
             const userId = req.userId;
             const user = await User.findOne({ userId });
@@ -960,15 +1110,15 @@ class ConversationController {
                     { creatorId: userId },
                     { receiverId: userId },
                     { groupMembers: { $in: [userId] } }
-                ] 
+                ]
             })
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' });  
-            }    
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
 
             if (!conversation.background) {
-                return res.status(400).json({ message: 'Conversation does not have a background' }); 
+                return res.status(400).json({ message: 'Conversation does not have a background' });
             }
 
             const updatedConversation = await Conversation.findOneAndUpdate(

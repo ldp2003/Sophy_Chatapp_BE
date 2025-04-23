@@ -17,6 +17,8 @@ router.put('/group/:conversationId/remove-co-owner/:userId', auth, conversationC
 router.put('/group/set-owner/:userId', auth, conversationController.setOwner.bind(conversationController));
 router.put('/group/delete/:conversationId', auth, conversationController.deleteGroup.bind(conversationController));
 router.put('/group/:conversationId/leave', auth, conversationController.leaveGroup.bind(conversationController));
+router.put('/group/:conversationId/block/:userId', auth, conversationController.blockUserFromGroup.bind(conversationController));
+router.put('/group/:conversationId/unblock/:userId', auth, conversationController.unblockUserFromGroup.bind(conversationController));
 router.put('/group/update/name/:conversationId', auth, conversationController.updateGroupName.bind(conversationController));
 router.put('/group/update/avatar/:conversationId', auth, uploadImage.single('groupAvatar'), conversationController.updateGroupAvatar.bind(conversationController));
 router.put('/update/background/:conversationId', auth, uploadImage.single('background'), conversationController.updateBackground.bind(conversationController));

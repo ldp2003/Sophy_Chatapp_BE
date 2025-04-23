@@ -43,7 +43,7 @@ const schema = new mongoose.Schema({
         },
         default: null
     },
-    blockedBy: {
+    blocked: {
         type: Array,
         schema: [String],
         default: []
