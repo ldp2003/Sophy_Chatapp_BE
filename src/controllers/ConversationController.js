@@ -87,6 +87,16 @@ class ConversationController {
             const { groupName, groupMembers } = req.body;
             const creatorId = req.userId;
 
+            if(!groupMembers) {
+                return res.status(400).json({ message: 'Group members are required' });
+            }
+            if (groupMembers.length < 2) {
+                return res.status(400).json({ message: 'Group must have at least 3 members' }); 
+            }
+            
+            if(!groupMembers.includes(creatorId))
+                groupMembers.push(creatorId);
+
             const creator = await User.findOne({ userId: creatorId });
 
             const last3Digits = creator.phone.slice(-3);
@@ -139,10 +149,7 @@ class ConversationController {
             const userId = req.userId;
 
             const groups = await Conversation.find({
-                $or: [
-                    { groupMembers: { $in: [userId] } },
-                    { formerMembers: { $in: [userId] } }
-                ],
+                groupMembers: { $in: [userId] },
                 isGroup: true
             });
 
@@ -1167,14 +1174,14 @@ class ConversationController {
             const conversations = await Conversation.find({
                 isGroup: true,
                 isDeleted: { $ne: true },
-                groupMembers:{
+                groupMembers: {
                     $all: [userId, targetUserId]
                 }
             }).select('-lastMessage -listImage -listFile -pinnedMessages -unreadCount ');
 
             res.json(conversations);
-        }  catch (error) {
-            res.status(500).json({ message: error.message }); 
+        } catch (error) {
+            res.status(500).json({ message: error.message });
         }
     }
 }
