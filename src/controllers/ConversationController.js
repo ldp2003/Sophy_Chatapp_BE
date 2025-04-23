@@ -1165,10 +1165,12 @@ class ConversationController {
             }
 
             const conversations = await Conversation.find({
+                isGroup: true,
+                isDeleted: { $ne: true },
                 groupMembers:{
                     $all: [userId, targetUserId]
                 }
-            });
+            }).select('-lastMessage -listImage -listFile -pinnedMessages -unreadCount ');
 
             res.json(conversations);
         }  catch (error) {
