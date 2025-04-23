@@ -891,7 +891,7 @@ class ConversationController {
             ).content;
 
             const uploadResponse = await cloudinary.uploader.upload(fileUri, {
-                folder: 'conversations/${conversationId}/avatars',
+                folder: 'conversations/${conversationId}/avatar',
                 transformation: [
                     { width: 500, height: 500, crop: 'fill' },
                     { quality: 'auto' }
@@ -907,18 +907,18 @@ class ConversationController {
                 );
 
                 if (!updatedConversation) {
-                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatars/${uploadResponse.public_id}`);
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatar/${uploadResponse.public_id}`);
                     return res.status(500).json({ message: 'Failed to update group avatar' });
                 }
             } catch (dbError) {
-                await cloudinary.uploader.destroy(`conversations/${conversationId}/avatars/${uploadResponse.public_id}`);
+                await cloudinary.uploader.destroy(`conversations/${conversationId}/avatar/${uploadResponse.public_id}`);
                 return res.status(500).json({ message: 'Failed to update group avatar in database' });
             }
 
             if (conversation.groupAvatarUrl && uploadResponse.secure_url) {
                 const publicId = conversation.groupAvatarUrl.split('/').pop().split('.')[0];
                 try {
-                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatars/${publicId}`);
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatar/${publicId}`);
                 } catch (error) {
                     console.error('Error deleting old group avatar:', error);
                 }
@@ -1022,6 +1022,77 @@ class ConversationController {
         }
     }
 
+    async updateGroupAvatarMobile(req, res) {
+        try {
+            const { imageBase64 } = req.body;
+
+            if (!imageBase64) {
+                return res.status(400).json({ message: 'No image uploaded' });
+            }
+
+            if (!imageBase64.startsWith('data:image/')) {
+                return res.status(400).json({ message: 'Invalid image format' });
+            }
+
+            const userId = req.userId;
+            const user = await User.findOne({ userId });
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            const { conversationId } = req.params;
+            const conversation = await Conversation.findOne({
+                conversationId: conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            })
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
+            }
+            const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+                folder: `conversations/${conversationId}/avatar`,
+                transformation: [
+                    { width: 500, height: 500, crop: 'fill' },
+                    { quality: 'auto' }
+                ] 
+            })
+            const updatedConversation = await Conversation.findOneAndUpdate(
+                { conversationId: conversationId },
+                { groupAvatarUrl: uploadResponse.secure_url },
+                { new: true } 
+            )
+            if (!updatedConversation) {
+                await cloudinary.uploader.destroy(`conversations/${conversationId}/avatar/${uploadResponse.public_id}`);
+                return res.status(500).json({ message: 'Failed to update avatar' }); 
+            }
+            if (conversation.groupAvatarUrl && uploadResponse.secure_url) {
+                const publicId = conversation.groupAvatarUrl.split('/').pop().split('.')[0];
+                try {
+                    await cloudinary.uploader.destroy(`conversations/${conversationId}/avatar/${publicId}`);  
+                } 
+                catch (error) {
+                    console.error('Error deleting old avatar:', error); 
+                }
+            }
+            await notificationController.createNotification(
+                'UPDATE_GROUP_AVATAR',
+                conversationId,
+                userId,
+                [],
+                `${user.fullname} đã thay đổi ảnh đại diện nhóm` 
+            )
+            res.json({
+                message: 'Avatar updated successfully',
+                conversation: updatedConversation 
+            })
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
     async updateBackgroundMobile(req, res) {
         try {
             const { imageBase64 } = req.body;
@@ -1088,11 +1159,6 @@ class ConversationController {
                 `${user.fullname} đã thay đổi ảnh nền`
             )
 
-            // io.to(conversationId).emit('groupBackgroundUpdated', {
-            //     conversationId,
-            //     newBackgroundUrl: uploadResponse.secure_url,
-            //     updatedBy: userId
-            // });
             res.json({
                 message: 'Background updated successfully',
                 conversation: updatedConversation
