@@ -256,10 +256,15 @@ class MessageDetailController {
                 $push: {
                     listImage: {
                         url: attachment.url,
-                        downloadUrl: attachment.downloadUrl
+                        downloadUrl: attachment.downloadUrl,
+                        senderId: sender.userId,
+                        createdAt: new Date().toISOString(),
+                        fromMessageId: messageDetailId,
+                        isRecall: false,
+                        hiddenFrom: []
                     }
                 }
-            })
+            });
 
             const updateData = {
                 newestMessageId: messageDetailId,
@@ -443,7 +448,7 @@ class MessageDetailController {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        sentAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString(),
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -603,8 +608,8 @@ class MessageDetailController {
                     listFile: {
                         name: attachment.name,
                         downloadUrl: attachment.downloadUrl,
-                        sender: sender.userId,
-                        sentAt: new Date().toISOString(),
+                        senderId: sender.userId,
+                        createdAt: new Date().toISOString(),
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -961,9 +966,14 @@ class MessageDetailController {
                     listImage: {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
+                        senderId: sender.userId,
+                        createdAt: new Date().toISOString(),
+                        fromMessageId: messageDetailId,
+                        isRecall: false,
+                        hiddenFrom: []
                     }
-                },
-            })
+                }
+            });
 
             const updateData = {
                 newestMessageId: messageDetailId,
@@ -1141,7 +1151,7 @@ class MessageDetailController {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        sentAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString(),
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -1342,7 +1352,7 @@ class MessageDetailController {
                         name: attachment.name,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        sentAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString(),
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
