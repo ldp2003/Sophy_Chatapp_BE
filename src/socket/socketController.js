@@ -4,6 +4,7 @@ const userConversations = new Map();
 const qrLoginSessions = new Map();
 const { generateToken04 } = require('../utils/zegoServerAssistant');
 
+require('dotenv').config();
 const appID = process.env.ZEGO_APP_ID;
 const serverSecret = process.env.ZEGO_SERVER_SECRET;
 
@@ -74,7 +75,7 @@ class SocketController {
 
                 try {
                     const token = generateToken04(
-                        appID,
+                        Number(appID),
                         userId,
                         serverSecret,
                         effectiveTimeInSeconds,
@@ -131,7 +132,7 @@ class SocketController {
 
                 try {
                     const token = generateToken04(
-                        appID,
+                        Number(appID),
                         socket.userId,
                         serverSecret,
                         3600,
