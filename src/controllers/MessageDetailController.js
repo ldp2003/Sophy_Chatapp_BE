@@ -254,13 +254,13 @@ class MessageDetailController {
 
             await Conversation.findOneAndUpdate({ conversationId: conversationId }, {
                 $push: {
-                    listImage:{
+                    listImage: {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl
                     }
                 }
             })
-            
+
             const updateData = {
                 newestMessageId: messageDetailId,
                 lastMessage: {
@@ -441,10 +441,15 @@ class MessageDetailController {
                 $push: {
                     listImage: {
                         url: attachment.url,
-                        downloadUrl: attachment.downloadUrl
+                        downloadUrl: attachment.downloadUrl,
+                        senderId: sender.userId,
+                        sentAt: new Date().toISOString(),
+                        fromMessageId: messageDetailId,
+                        isRecall: false,
+                        hiddenFrom: []
                     }
                 }
-            })
+            });
 
             const updateData = {
                 newestMessageId: messageDetailId,
@@ -597,7 +602,12 @@ class MessageDetailController {
                 $push: {
                     listFile: {
                         name: attachment.name,
-                        downloadUrl: attachment.downloadUrl
+                        downloadUrl: attachment.downloadUrl,
+                        sender: sender.userId,
+                        sentAt: new Date().toISOString(),
+                        fromMessageId: messageDetailId,
+                        isRecall: false,
+                        hiddenFrom: []
                     }
                 }
             });
@@ -1130,9 +1140,14 @@ class MessageDetailController {
                     listImage: {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
+                        senderId: sender.userId,
+                        sentAt: new Date().toISOString(),
+                        fromMessageId: messageDetailId,
+                        isRecall: false,
+                        hiddenFrom: []
                     }
                 }
-            })
+            });
 
             const updateData = {
                 newestMessageId: messageDetailId,
@@ -1325,7 +1340,12 @@ class MessageDetailController {
                 $push: {
                     listFile: {
                         name: attachment.name,
-                        downloadUrl: attachment.downloadUrl
+                        downloadUrl: attachment.downloadUrl,
+                        senderId: sender.userId,
+                        sentAt: new Date().toISOString(),
+                        fromMessageId: messageDetailId,
+                        isRecall: false,
+                        hiddenFrom: []
                     }
                 }
             });
@@ -1534,6 +1554,22 @@ class MessageDetailController {
                 );
             }
 
+            await Conversation.updateMany(
+                { conversationId: conversation.conversationId },
+                {
+                    $set: {
+                        'listImage.$[img].isRecall': true,
+                        'listFile.$[file].isRecall': true
+                    }
+                },
+                {
+                    arrayFilters: [
+                        { 'img.fromMessageId': message.messageDetailId },
+                        { 'file.fromMessageId': message.messageDetailId }
+                    ]
+                }
+            );
+
             await User.updateOne(
                 { userId: userId },
                 { lastActive: new Date() }
@@ -1564,9 +1600,38 @@ class MessageDetailController {
                 return res.status(404).json({ message: 'Message not found' });
             }
 
+            const conversation = await Conversation.findOne({
+                conversationId: message.conversationId,
+                $or: [
+                    { creatorId: userId },
+                    { receiverId: userId },
+                    { groupMembers: { $in: [userId] } }
+                ]
+            });
+
+            if (!conversation) {
+                return res.status(404).json({ message: 'Conversation not found or access denied' });  
+            }
+
             await MessageDetail.updateOne(
                 { messageDetailId: messageId },
                 { $addToSet: { hiddenFrom: userId } }
+            );
+            
+            await Conversation.updateMany(
+                { conversationId: conversation.conversationId },
+                {
+                    $addToSet: {
+                        'listImage.$[img].hiddenFrom': userId,
+                        'listFile.$[file].hiddenFrom': userId
+                    }
+                },
+                {
+                    arrayFilters: [
+                        { 'img.fromMessageId': message.messageDetailId },
+                        { 'file.fromMessageId': message.messageDetailId }
+                    ]
+                }
             );
 
             res.json({ message: 'Message deleted successfully' });
@@ -1614,11 +1679,11 @@ class MessageDetailController {
                     pinnedAt: new Date().toISOString()
                 }
             );
-            
+
             await Conversation.updateOne(
-                { 
+                {
                     conversationId: message.conversationId,
-                    'pinnedMessages.messageDetailId': messageId 
+                    'pinnedMessages.messageDetailId': messageId
                 },
                 {
                     $set: {
@@ -1636,7 +1701,7 @@ class MessageDetailController {
 
             // Nếu không tìm thấy để cập nhật, thêm mới
             await Conversation.updateOne(
-                { 
+                {
                     conversationId: message.conversationId,
                     'pinnedMessages.messageDetailId': { $ne: messageId }
                 },
@@ -1660,15 +1725,15 @@ class MessageDetailController {
             );
 
             let notificationContent = '';
-            if(message.type==='text'){
+            if (message.type === 'text') {
                 notificationContent = `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`;
-            }else if (message.type === 'text-with-image') {
+            } else if (message.type === 'text-with-image') {
                 notificationContent = `${user.fullname} đã bỏ ghim tin nhắn hình ảnh ${message.content}`;
-            }else if (message.type === 'image') {
+            } else if (message.type === 'image') {
                 notificationContent = `${user.fullname} đã bỏ ghim hình ảnh`;
-            }else if (message.type === 'video') {
+            } else if (message.type === 'video') {
                 notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
-            }else if (message.type === 'file') {
+            } else if (message.type === 'file') {
                 notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
             } else {
                 notificationContent = `${user.fullname} đã bỏ ghim tin nhắn`;
@@ -1747,15 +1812,15 @@ class MessageDetailController {
             )
 
             let notificationContent = '';
-            if(message.type==='text'){
+            if (message.type === 'text') {
                 notificationContent = `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`;
-            }else if (message.type === 'text-with-image') {
+            } else if (message.type === 'text-with-image') {
                 notificationContent = `${user.fullname} đã bỏ ghim tin nhắn hình ảnh ${message.content}`;
-            }else if (message.type === 'image') {
+            } else if (message.type === 'image') {
                 notificationContent = `${user.fullname} đã bỏ ghim hình ảnh`;
-            }else if (message.type === 'video') {
+            } else if (message.type === 'video') {
                 notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
-            }else if (message.type === 'file') {
+            } else if (message.type === 'file') {
                 notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
             } else {
                 notificationContent = `${user.fullname} đã bỏ ghim tin nhắn`;
@@ -1847,7 +1912,7 @@ class MessageDetailController {
                 currentDate.getMinutes().toString().padStart(2, '0') +
                 currentDate.getSeconds().toString().padStart(2, '0');
             const messageDetailId = `msg${last3Digits}${formattedDate}-${uuidv4()}`;
-            
+
             const replyMessage = await MessageDetail.create({
                 messageDetailId: messageDetailId,
                 senderId: userId,
@@ -1896,23 +1961,23 @@ class MessageDetailController {
         try {
             const userId = req.userId;
             const messageId = req.params.messageId;
-            const { conversationId } = req.body; 
+            const { conversationId } = req.body;
             const sender = await User.findOne({ userId });
 
             if (!sender) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const message = await MessageDetail.findOne({
-                messageDetailId: messageId 
+                messageDetailId: messageId
             })
 
             if (!message) {
-                return res.status(404).json({ message: 'Message not found' }); 
+                return res.status(404).json({ message: 'Message not found' });
             }
 
             if (message.hiddenFrom?.includes(userId)) {
-                return res.status(404).json({ message: 'Message not found' }); 
+                return res.status(404).json({ message: 'Message not found' });
             }
 
             const conversation = await Conversation.findOne({

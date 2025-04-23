@@ -71,6 +71,36 @@ const schema = new mongoose.Schema({
             }
         }
     },
+    groupSettings: {
+        type: Object,
+        schema: {
+          memberCanSendMessage: {
+            type: Boolean,
+            default: true 
+          },
+          memberCanChangeNameAndAvatar: {
+            type: Boolean,
+            default: false 
+          },
+          memberCanPinMessage: {
+            type: Boolean,
+            default: true
+          },
+          memberCanCreatePoll: {
+            type: Boolean,
+            default: true
+          },
+          memberCanAdd: {
+            type: Boolean,
+            default: true
+          },
+          canJoinViaLink: {
+            type: Boolean,
+            default: true 
+          }
+        } 
+    }
+    ,
     groupMembers: {
         type: Array,
         default: [],
@@ -83,7 +113,29 @@ const schema = new mongoose.Schema({
             type: Object,
             schema: {
                 url: String,
-                downloadUrl: String
+                downloadUrl: String,
+                senderId: {
+                    type: String,
+                    required: true,
+                    ref: 'User'
+                },
+                createdAt: {
+                    type: String,
+                    default: () => new Date().toISOString()
+                },
+                fromMessageId: {
+                    type: String,
+                    required: true
+                },
+                isRecall: {
+                    type: Boolean,
+                    default: false
+                },
+                hiddenFrom: {
+                    type: Array,
+                    schema: [String],
+                    default: []
+                }
             }
         }]
     },
@@ -94,7 +146,29 @@ const schema = new mongoose.Schema({
             type: Object,
             schema: {
                 name: String,
-                downloadUrl: String
+                downloadUrl: String,
+                senderId: {
+                    type: String,
+                    required: true,
+                    ref: 'User'
+                },
+                createdAt: {
+                    type: String,
+                    default: () => new Date().toISOString()
+                },
+                fromMessageId: {
+                    type: String,
+                    required: true
+                },
+                isRecall: {
+                    type: Boolean,
+                    default: false
+                },
+                hiddenFrom: {
+                    type: Array,
+                    schema: [String],
+                    default: []
+                }
             }
         }]
     },
