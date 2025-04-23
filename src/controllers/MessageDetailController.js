@@ -258,7 +258,7 @@ class MessageDetailController {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: message.createdAt,
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -448,7 +448,7 @@ class MessageDetailController {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: message.createdAt,
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -609,7 +609,7 @@ class MessageDetailController {
                         name: attachment.name,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: message.createdAt,
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -967,7 +967,7 @@ class MessageDetailController {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: message.createdAt,
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -1151,7 +1151,7 @@ class MessageDetailController {
                         url: attachment.url,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: message.createdAt,
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
@@ -1352,7 +1352,7 @@ class MessageDetailController {
                         name: attachment.name,
                         downloadUrl: attachment.downloadUrl,
                         senderId: sender.userId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: message.createdAt,
                         fromMessageId: messageDetailId,
                         isRecall: false,
                         hiddenFrom: []
