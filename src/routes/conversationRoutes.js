@@ -23,7 +23,7 @@ router.put('/group/update/name/:conversationId', auth, conversationController.up
 router.put('/group/update/avatar/:conversationId', auth, uploadImage.single('groupAvatar'), conversationController.updateGroupAvatar.bind(conversationController));
 router.put('/update/background/:conversationId', auth, uploadImage.single('background'), conversationController.updateBackground.bind(conversationController));
 //router.put('/update/background/remove/:conversationId', auth, conversationController.removeBackground.bind(conversationController));
-router.put('/mobile/update/avatar/:conversationId', auth, conversationController.updateGroupAvatarMobile.bind(conversationController));
+router.put('/mobile/group/update/avatar/:conversationId', auth, conversationController.updateGroupAvatarMobile.bind(conversationController));
 router.put('/mobile/update/background/:conversationId', auth, conversationController.updateBackgroundMobile.bind(conversationController));
 router.put('/mobile/update/background/remove/:conversationId', auth, conversationController.removeBackgroundMobile.bind(conversationController));
 router.get('/get-same-groups/:userId', auth, conversationController.getSameGroups.bind(conversationController));
