@@ -143,10 +143,7 @@ class MessageDetailController {
             );
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -329,10 +326,7 @@ class MessageDetailController {
             )
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -520,10 +514,7 @@ class MessageDetailController {
             )
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -680,10 +671,7 @@ class MessageDetailController {
             )
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -1037,10 +1025,7 @@ class MessageDetailController {
             )
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -1223,10 +1208,7 @@ class MessageDetailController {
             )
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -1424,10 +1406,7 @@ class MessageDetailController {
             );
 
             const socketController = getSocketController();
-            socketController.emitNewMessage(conversationId, {
-                ...message,
-                messageId: message.messageDetailId
-            }, {
+            socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
                 fullname: sender.fullname,
                 avatar: sender.urlavatar || null
@@ -1620,14 +1599,14 @@ class MessageDetailController {
             });
 
             if (!conversation) {
-                return res.status(404).json({ message: 'Conversation not found or access denied' });  
+                return res.status(404).json({ message: 'Conversation not found or access denied' });
             }
 
             await MessageDetail.updateOne(
                 { messageDetailId: messageId },
                 { $addToSet: { hiddenFrom: userId } }
             );
-            
+
             await Conversation.updateMany(
                 { conversationId: conversation.conversationId },
                 {
