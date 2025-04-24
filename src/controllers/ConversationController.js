@@ -228,6 +228,10 @@ class ConversationController {
             const socketController = getSocketController();
 
             conversation.groupMembers.push(userId);
+            if(conversation.formerMembers && conversation.formerMembers.includes(userId)) {
+                conversation.formerMembers = conversation.formerMembers.filter(id => id!== userId);
+            }
+
             if (conversation.blocked && conversation.blocked.includes(userId)) {
                 conversation.blocked = conversation.blocked.filter(id => id !== userId);
                 socketController.emitUnblockUser(conversation.conversationId, userId);
@@ -744,9 +748,15 @@ class ConversationController {
 
             if (conversation.groupMembers.includes(userId)) {
                 conversation.groupMembers = conversation.groupMembers.filter(id => id !== userId);
+                if (!conversation.formerMembers) {
+                    conversation.formerMembers = []; 
+                }
+                if (!conversation.formerMembers.includes(userId)) {
+                    conversation.formerMembers.push(userId); 
+                }
             }
 
-            if (conversation.rules.coOwnerIds && conversation.rules.coOwnerIds.includes(userId)) {
+            if (targetIsCoOwner) {
                 conversation.rules.coOwnerIds = conversation.rules.coOwnerIds.filter(id => id !== userId);
                 conversation.markModified('rules.coOwnerIds');
             }
