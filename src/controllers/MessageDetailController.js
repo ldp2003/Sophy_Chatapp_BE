@@ -1505,10 +1505,10 @@ class MessageDetailController {
     async recallMessage(req, res) {
         try {
             const userId = req.userId;
-            const messaageId = req.params.messageId;
+            const messageId = req.params.messageId;
 
             const message = await MessageDetail.findOne({
-                messageDetailId: messaageId,
+                messageDetailId: messageId,
                 senderId: userId
             });
 
