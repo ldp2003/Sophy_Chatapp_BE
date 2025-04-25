@@ -1569,7 +1569,7 @@ class MessageDetailController {
 
 
             const socketController = getSocketController();
-            socketController.emitRecallMessage(conversation.conversationId, message.messageDetailId);
+            socketController.emitRecallingMessage(conversation.conversationId, message.messageDetailId);
 
             
         } catch (error) {

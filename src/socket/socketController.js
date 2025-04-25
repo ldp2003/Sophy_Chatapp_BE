@@ -310,7 +310,7 @@ class SocketController {
         this.io.to(conversationId).emit('userTyping', { conversationId, userId, fullname });
     }
 
-    emitRecallMessage(conversationId, messageId) {
+    emitRecallingMessage(conversationId, messageId) {
         this.io.to(conversationId).emit('messageRecalled', { conversationId, messageId });
     }
 
