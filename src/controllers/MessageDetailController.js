@@ -1565,11 +1565,10 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
-            
-
+            res.json({ message: 'Message recalled successfully' });
 
             const socketController = getSocketController();
-            socketController.emitRecallingMessage(conversation.conversationId, message.messageDetailId);
+            socketController.emitRecallomMessage(conversation.conversationId, message.messageDetailId);
 
             
         } catch (error) {
