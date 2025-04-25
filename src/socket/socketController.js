@@ -330,6 +330,10 @@ class SocketController {
         this.io.to(conversationId).emit('userJoinedGroup', { conversationId, userId }); 
     }
 
+    emitAddUserToGroup(conversationId, addedUser, addedByUser) {
+        this.io.to(conversationId).emit('userAddedToGroup', { conversationId, addedUser, addedByUser });
+    }
+
     emitLeaveGroup(conversationId, userId) {
         this.io.to(conversationId).emit('userLeftGroup', { conversationId, userId });
 
@@ -342,6 +346,23 @@ class SocketController {
         }
         
         const userConvSet = userConversations.get(userId);
+        if (userConvSet) {
+            userConvSet.delete(conversationId);
+        }
+    }
+
+    emitRemoveUserFromGroup(conversationId, kickedUser, kickedByUser) {
+        this.io.to(conversationId).emit('userRemovedFromGroup', { conversationId, kickedUser, kickedByUser }); 
+
+        const userSocket = userSockets.get(kickedUser.userId);
+        if (userSocket) {
+            const socket = this.io.sockets.sockets.get(userSocket);
+            if (socket) {
+                socket.leave(conversationId);
+            }
+        }
+
+        const userConvSet = userConversations.get(kickedUser.userId);
         if (userConvSet) {
             userConvSet.delete(conversationId);
         }

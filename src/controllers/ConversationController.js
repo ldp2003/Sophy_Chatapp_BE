@@ -250,7 +250,8 @@ class ConversationController {
                 createdAt: conversation.createdAt,
             });
 
-            socketController.emitJoinGroup(conversation.conversationId, userId);
+            //socketController.emitJoinGroup(conversation.conversationId, userId);
+            socketController.emitAddUserToGroup(conversation.conversationId, {userId: user.userId, fullname: user.fullname}, {userId: currentUserId, fullname: currentUser.fullname});
 
             await notificationController.createNotification(
                 'ADD_MEMBER',
@@ -318,8 +319,7 @@ class ConversationController {
 
                 conversation.markModified('rules.coOwnerIds');
                 await conversation.save();
-
-                socketController.emitLeaveGroup(conversation.conversationId, userId);
+                socketController.emitRemoveUserFromGroup(conversation.conversationId, {userId: user.userId, fullname: user.fullname}, {userId: currentUserId, fullname: currentUser.fullname});
 
                 await notificationController.createNotification(
                     'REMOVE_MEMBER',
@@ -350,7 +350,7 @@ class ConversationController {
                 }
 
                 await conversation.save();
-                socketController.emitLeaveGroup(conversation.conversationId, userId);
+                socketController.emitRemoveUserFromGroup(conversation.conversationId, {userId: user.userId, fullname: user.fullname}, {userId: currentUserId, fullname: currentUser.fullname});
 
                 await notificationController.createNotification(
                     'REMOVE_MEMBER',
