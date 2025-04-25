@@ -670,6 +670,8 @@ class MessageDetailController {
                 { lastActive: new Date() }
             )
 
+            res.status(201).json(message); 
+
             const socketController = getSocketController();
             socketController.emitNewMessage(conversationId, message, {
                 userId: sender.userId,
@@ -677,7 +679,6 @@ class MessageDetailController {
                 avatar: sender.urlavatar || null
             });
 
-            res.status(201).json(message);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
@@ -1564,10 +1565,13 @@ class MessageDetailController {
                 { lastActive: new Date() }
             );
 
+            
+
+
             const socketController = getSocketController();
             socketController.emitRecallMessage(conversation.conversationId, message.messageDetailId);
 
-            res.json({ message: 'Message recalled successfully' });
+            
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
