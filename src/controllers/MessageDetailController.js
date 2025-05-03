@@ -1718,17 +1718,17 @@ class MessageDetailController {
 
             let notificationContent = '';
             if (message.type === 'text') {
-                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn ${message.content}`;
+                notificationContent = `${user.fullname} đã ghim tin nhắn ${message.content}`;
             } else if (message.type === 'text-with-image') {
-                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn hình ảnh ${message.content}`;
+                notificationContent = `${user.fullname} đã ghim tin nhắn hình ảnh ${message.content}`;
             } else if (message.type === 'image') {
-                notificationContent = `${user.fullname} đã bỏ ghim hình ảnh`;
+                notificationContent = `${user.fullname} đã ghim hình ảnh`;
             } else if (message.type === 'video') {
-                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+                notificationContent = `${user.fullname} đã ghim video`;
             } else if (message.type === 'file') {
-                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+                notificationContent = `${user.fullname} đã ghim tệp tin`;
             } else {
-                notificationContent = `${user.fullname} đã bỏ ghim tin nhắn`;
+                notificationContent = `${user.fullname} đã ghim tin nhắn`;
             }
 
             await notificationController.createNotification(
@@ -1811,7 +1811,7 @@ class MessageDetailController {
             } else if (message.type === 'image') {
                 notificationContent = `${user.fullname} đã bỏ ghim hình ảnh`;
             } else if (message.type === 'video') {
-                notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
+                notificationContent = `${user.fullname} đã bỏ ghim video`;
             } else if (message.type === 'file') {
                 notificationContent = `${user.fullname} đã bỏ ghim tệp tin`;
             } else {
