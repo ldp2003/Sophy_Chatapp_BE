@@ -53,7 +53,7 @@ const schema = new mongoose.Schema({
         default: false
     },
     deletedAt: {
-        type: String,
+        type: Date,
         default: null
     },
     formerMembers: {
@@ -240,6 +240,13 @@ const schema = new mongoose.Schema({
     }
 });
 
+schema.pre('save', async function(next) {
+    if (this.isDeleted && !this.deletedAt) {
+        this.deletedAt = new Date();
+    }
+    next();
+});
+
 schema.pre('deleteOne', { document: true, query: false }, async function(next) {
     try {
         const MessageDetail = require('./MessageDetail');
@@ -262,6 +269,8 @@ schema.pre('deleteMany', async function(next) {
     }
 });
 
+//7 ngày hết hạn -> xóa conversation
+schema.index({ deletedAt: 1 }, { expireAfterSeconds: 604800 });
 
 //const Conversation = dynamoose.model("Conversation", schema);
 const Conversation = mongoose.model('Conversation', schema);

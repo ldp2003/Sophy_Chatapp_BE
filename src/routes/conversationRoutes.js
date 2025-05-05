@@ -27,5 +27,7 @@ router.put('/mobile/group/update/avatar/:conversationId', auth, conversationCont
 router.put('/mobile/update/background/:conversationId', auth, conversationController.updateBackgroundMobile.bind(conversationController));
 router.put('/mobile/update/background/remove/:conversationId', auth, conversationController.removeBackgroundMobile.bind(conversationController));
 router.get('/get-same-groups/:userId', auth, conversationController.getSameGroups.bind(conversationController));
+router.put('/pin/:conversationId', auth, conversationController.pinConversation.bind(conversationController));
+router.put('/unpin/:conversationId', auth, conversationController.unpinConversation.bind(conversationController));
 
 module.exports = router;

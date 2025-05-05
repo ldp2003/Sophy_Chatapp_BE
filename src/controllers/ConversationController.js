@@ -602,7 +602,7 @@ class ConversationController {
             }
 
             conversation.isDeleted = true;
-            conversation.deletedAt = new Date().toISOString();
+            conversation.deletedAt = new Date();
 
             if (!conversation.formerMembers) {
                 conversation.formerMembers = [];
@@ -1310,6 +1310,68 @@ class ConversationController {
             }).select('-lastMessage -listImage -listFile -pinnedMessages -unreadCount ');
 
             res.json(conversations);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async pinConversation(req, res) {
+        try {
+            const { conversationId } = req.params;
+            const userId = req.userId;
+            
+            const updatedUser = await User.findOneAndUpdate(
+                { userId },
+                { 
+                    $addToSet: {
+                        pinnedConversations: {
+                            conversationId,
+                            pinnedAt: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            if (!updatedUser) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const socketController = getSocketController();
+            socketController.emitPinnedConversations(userId, updatedUser.pinnedConversations);
+
+            res.json({
+                message: 'Conversation pinned successfully',
+                pinnedConversations: updatedUser.pinnedConversations
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    async unpinConversation(req, res) {
+        try {
+            const { conversationId } = req.params;
+            const userId = req.userId;
+            
+            const user = await User.findOne({ userId });
+            if (!user.pinnedConversations || user.pinnedConversations.length === 0) {
+                return res.status(400).json({ message: 'No pinned conversations' });
+            }
+
+            user.pinnedConversations = user.pinnedConversations.filter(
+                pin => pin.conversationId !== conversationId
+            );
+
+            await user.save();
+
+            const socketController = getSocketController();
+            socketController.emitPinnedConversations(userId, user.pinnedConversations);
+
+            res.json({
+                message: 'Conversation unpinned successfully',
+                pinnedConversations: user.pinnedConversations
+            });
         } catch (error) {
             res.status(500).json({ message: error.message });
         }

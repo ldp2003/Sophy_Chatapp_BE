@@ -34,6 +34,17 @@ const schema = new mongoose.Schema({
         type: Array,
         schema: [String],
     },
+    pinnedConversations: {
+        type: Array,
+        schema: [{
+            conversationId: String,
+            pinnedAt: {
+                type: String,
+                default: () => new Date()
+            }
+        }],
+        default: []
+    },
     createdAt: {
         type: String,
         default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS')

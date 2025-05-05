@@ -417,6 +417,10 @@ class SocketController {
         this.io.to(conversationId).emit('userUnblocked', { conversationId, unblockedUserId });
     }
 
+    emitPinnedConversations(userId, pinnedConversations) {
+        this.io.to(`user_${userId}`).emit('pinnedConversations', { pinnedConversations });    
+    }
+
     emitNotification(conversationId, notification) {
         this.io.to(conversationId).emit('newNotification', {
             conversationId,

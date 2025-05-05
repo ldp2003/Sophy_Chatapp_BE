@@ -31,11 +31,11 @@ const schema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: () => new Date(),
   },
   updatedAt: {
     type: Date,
-    default: Date.now,
+    default: () => new Date(),
   },
   deletionDate: {
     type: Date,
