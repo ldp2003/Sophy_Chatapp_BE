@@ -604,6 +604,11 @@ class ConversationController {
             conversation.isDeleted = true;
             conversation.deletedAt = new Date();
 
+            await MessageDetail.updateMany(
+                { conversationId: conversation.conversationId },
+                { deletedAt: conversation.deletedAt  }
+            );
+
             if (!conversation.formerMembers) {
                 conversation.formerMembers = [];
             }

@@ -132,11 +132,6 @@ const schema = new mongoose.Schema({
         },
         default: null
     },
-    deletedFor: {
-        type: Array,
-        schema: [String],
-        default: []
-    },
     readBy: {
         type: Array,
         schema: [{
@@ -159,6 +154,10 @@ const schema = new mongoose.Schema({
         }],
         default: []
     },
+    deletedAt: {
+        type: Date,
+        default: null
+    }
 });
 
 schema.virtual('replyData', {
@@ -171,6 +170,18 @@ schema.virtual('replyData', {
 // Đảm bảo virtuals được include khi chuyển đổi sang JSON
 schema.set('toJSON', { virtuals: true });
 schema.set('toObject', { virtuals: true });
+
+schema.pre('save', async function(next) {
+    if (!this.isModified('conversationId')) return next();
+    
+    const Conversation = mongoose.model('Conversation');
+    const conversation = await Conversation.findOne({ conversationId: this.conversationId });
+    if (conversation && conversation.deletedAt) {
+        this.deletedAt = conversation.deletedAt;
+    }
+    next();
+});
+schema.index({ deletedAt: 1 }, { expireAfterSeconds: 604800 });
 
 //const MessageDetail = dynamoose.model("MessageDetail", schema);
 const MessageDetail = mongoose.model('MessageDetail', schema);
