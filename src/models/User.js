@@ -54,9 +54,22 @@ const schema = new mongoose.Schema({
         default: moment.tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DDTHH:mm:ss.SSS')
     },
     deviceTokens: {
-        type: Array,
-        schema: [String],
-        default: []
+        type: Object,
+        schema: {
+            browserToken: {
+                type: String,
+                default: null
+            },
+            mobileTokens: {
+                type: Array,
+                schema: [String],
+                default: []
+            }
+        },
+        default: {
+            browserToken: null,
+            mobileTokens: []
+        }
     }
 });
 

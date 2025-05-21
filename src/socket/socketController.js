@@ -63,6 +63,10 @@ class SocketController {
 
                 socket.join(`user_${userId}`);
 
+                socket.on('forceLogout', () => {
+                    socket.disconnect(true);
+                });
+
                 const effectiveTimeInSeconds = 3600; // Token valid for 1 hour
                 const payload = {
                     room_id: '',
@@ -284,6 +288,11 @@ class SocketController {
             socketId: socket.id,
             hasConversations: userConversations.has(userId)
         });
+    }
+
+    emitForceLogout(userId, deviceType) {
+        const userRoom = `user_${userId}`;
+        this.io.to(userRoom).emit('forceLogout', { deviceType });
     }
 
     emitNewConversation(receiverId, conversationData) {

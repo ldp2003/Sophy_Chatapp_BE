@@ -8,6 +8,7 @@ const uuid = require('uuid');
 const rateLimit = require('express-rate-limit');
 const twilio = require('twilio');
 const { v4: uuidv4 } = require('uuid');
+const { getSocketController } = require('../socket');
 // const SpeedSMS = require('../utils/speedsms');
 // const speedsms = new SpeedSMS(process.env.SPEEDSMS_API_KEY);
 // const SMSService = require('../utils/tingtingSMS');
@@ -24,14 +25,14 @@ const { v4: uuidv4 } = require('uuid');
 
 const otpCache = new Map();
 const verificationAttempts = new Map();
-const qrLoginCache = new Map(); 
+const qrLoginCache = new Map();
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const checkPhoneLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 phút
     max: 5, // tối đa 5 lần request trong 15 phút
-    message: { message: 'Request too many verification code, please try again later' }, 
+    message: { message: 'Request too many verification code, please try again later' },
     keyGenerator: (req) => req.ip // xài IP làm key
 })
 const phoneVerificationLimiter = rateLimit({
@@ -42,15 +43,15 @@ const phoneVerificationLimiter = rateLimit({
 });
 
 const forgotPasswordLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 5, 
-    message: { message: 'Request too many verification code, please try again later' }, 
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { message: 'Request too many verification code, please try again later' },
     keyGenerator: (req) => req.ip
 })
 const forgotPasswordVerificationLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 15,
-    message: { message: 'Too many verification attempts, please try again later' }, 
+    message: { message: 'Too many verification attempts, please try again later' },
     keyGenerator: (req) => req.ip
 })
 
@@ -61,7 +62,7 @@ class AuthController {
         this.forgotPasswordLimiter = forgotPasswordLimiter;
         this.forgotPasswordVerificationLimiter = forgotPasswordVerificationLimiter;
     }
-    
+
     async login(req, res) {
         try {
             const { phone, password } = req.body;
@@ -80,10 +81,8 @@ class AuthController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            console.log('Found user:', user.userId);
-
             const isValidPassword = await bcrypt.compare(password, user.password);
-            console.log('Password valid:', isValidPassword);
+
             if (!isValidPassword) {
                 return res.status(401).json({ message: 'Invalid password' });
             }
@@ -91,6 +90,37 @@ class AuthController {
             const jit = uuid.v4();
             const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
             const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
+
+            const userAgent = req.headers['user-agent']?.toLowerCase() || '';
+            const isBrowser = userAgent.includes('mozilla') && 
+                (userAgent.includes('chrome') || 
+                userAgent.includes('safari') || 
+                userAgent.includes('firefox') || 
+                userAgent.includes('edge') ||
+                userAgent.includes('opera'));
+            console.log('User Agent:', userAgent);
+            console.log('Is Browser:', isBrowser);
+
+            if (isBrowser) {
+                //check trình duyệt, nếu là td thì  vô hiệu hóa browserToken cũ nếu có
+                if (user.deviceTokens.browserToken) {
+                    const blacklistKey = `blacklist_${user.userId}_${user.deviceTokens.browserToken}`;
+                    cache.set(blacklistKey, { userId: user.userId }, 24 * 60 * 60);
+                }
+                // update browserToken 
+                user.deviceTokens.browserToken = jit;
+                user.markModified('deviceTokens');
+                await user.save();
+
+                const socketController = getSocketController();
+                socketController.emitForceLogout(user.userId, 'browser');
+            } else {
+                if (!user.deviceTokens.mobileTokens.includes(jit)) {
+                    user.deviceTokens.mobileTokens.push(jit);
+                    user.markModified('deviceTokens');
+                    await user.save();
+                }
+            }
 
             res.json({
                 token: {
@@ -143,7 +173,7 @@ class AuthController {
                 console.error('SMS sending error:', smsError);
                 return res.status(500).json({ message: 'Failed to send verification code' });
             }
-            
+
             // try {
             //     console.log('Twilio Config:', {
             //         accountSid: process.env.TWILIO_ACCOUNT_SID?.substring(0, 5) + '...',
@@ -156,9 +186,9 @@ class AuthController {
             //         from: process.env.TWILIO_PHONE_NUMBER,
             //         to: `+84${phone.substring(1)}`
             //     });
-                
+
             //     console.log('Twilio Message SID:', message.sid);
-                
+
             //     res.json({ 
             //         message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
             //         otpId: otpId
@@ -178,7 +208,7 @@ class AuthController {
             // try {
             //     const message = `Your verification code to register Sophy is: ${otp}`;
             //     const result = await speedsms.sendSMS(phone, message);
-                
+
             //     if (result.status === 'success') {
             //         res.json({ 
             //             message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
@@ -191,11 +221,11 @@ class AuthController {
             //     console.error('SMS sending error:', smsError);
             //     res.status(500).json({ message: 'Failed to send verification code' });
             // }
-            
+
             // try {
             //     const message = `Your verification code to register Sophy is: ${otp}`;
             //     await smsService.sendSMS(phone, message);
-                
+
             //     return res.json({
             //         message: 'Verification code sent to ' + phone,
             //         otpId: otpId
@@ -224,34 +254,34 @@ class AuthController {
     async verifyPhoneOTP(req, res) {
         try {
             const { phone, otp, otpId } = req.body;
-            
+
             const otpData = otpCache.get(phone);
-            
+
             if (!otpData || otpData.otpId !== otpId) {
                 return res.status(400).json({ message: 'Invalid verification attempt' });
             }
-            
+
             if (Date.now() > otpData.expiresAt) {
                 otpCache.delete(phone);
                 return res.status(400).json({ message: 'Verification code expired' });
             }
-            
+
             if (otpData.otp !== otp) {
                 const attempts = verificationAttempts.get(phone) || 0;
                 verificationAttempts.set(phone, attempts + 1);
-                
+
                 if (attempts >= 3) {
                     otpCache.delete(phone);
                     verificationAttempts.delete(phone);
                     return res.status(400).json({ message: 'Too many failed attempts. Please request a new code.' });
                 }
-                
+
                 return res.status(400).json({ message: 'Invalid verification code' });
             }
-            
+
             otpCache.delete(phone);
             verificationAttempts.delete(phone);
-            
+
             res.json({ message: 'Phone verified successfully' });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -268,12 +298,12 @@ class AuthController {
                 createdAt: new Date(),
                 expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 phút
             });
-            
+
             res.json({
                 qrToken: qrToken,
                 expiresAt: Date.now() + 5 * 60 * 1000
             });
-            
+
         } catch (error) {
             console.error('QR token generation error:', error);
             res.status(500).json({ message: error.message });
@@ -283,28 +313,28 @@ class AuthController {
     async verifyQrToken(req, res) {
         try {
             const { qrToken } = req.body;
-            const userId = req.userId; 
-            
+            const userId = req.userId;
+
             // Kiểm tra có tồn tại không
-            const tokenData = await QrLogin.findOne({ 
+            const tokenData = await QrLogin.findOne({
                 qrToken,
                 expiresAt: { $gt: new Date() }
             });
-            
+
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
             }
-            
+
             await QrLogin.updateOne(
                 { qrToken },
-                { 
+                {
                     status: 'scanned',
                     userId: userId
                 }
             );
-            
+
             res.json({ message: 'QR token xác thực thành công' });
-            
+
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
@@ -314,35 +344,35 @@ class AuthController {
         try {
             const { qrToken } = req.body;
             const userId = req.userId;
-            
-            const tokenData = await QrLogin.findOne({ 
+
+            const tokenData = await QrLogin.findOne({
                 qrToken,
                 expiresAt: { $gt: new Date() }
             });
-            
+
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
             }
-            
+
             if (tokenData.status !== 'scanned') {
                 return res.status(400).json({ message: 'QR token chưa được quét' });
             }
-            
+
             if (tokenData.userId !== userId) {
                 return res.status(403).json({ message: 'Không có quyền xác nhận QR token này' });
             }
-            
-            
+
+
             await QrLogin.updateOne(
                 { qrToken },
                 {
-                    status:'authenticated',
+                    status: 'authenticated',
                     userId: userId
-                } 
+                }
             )
-            
+
             res.json({ message: 'QR login xác thực thành công' });
-            
+
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
@@ -351,8 +381,8 @@ class AuthController {
     async checkQrStatus(req, res) {
         try {
             const { qrToken } = req.params;
-            
-            const tokenData = await QrLogin.findOne({ 
+
+            const tokenData = await QrLogin.findOne({
                 qrToken,
                 expiresAt: { $gt: new Date() }
             });
@@ -360,20 +390,20 @@ class AuthController {
             if (!tokenData) {
                 return res.status(404).json({ message: 'QR token không tồn tại hoặc đã hết hạn' });
             }
-            
+
             // Nếu token đã được xác thực thì làm tạo jwt để xác thực rồi đăng nhập giống login
             if (tokenData.status === 'authenticated') {
                 const user = await User.findOne({ userId: tokenData.userId });
                 if (!user) {
                     return res.status(404).json({ message: 'Không tìm thấy người dùng' });
                 }
-                
+
                 const jit = uuid.v4();
                 const accessToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '1h' });
                 const refreshToken = jwt.sign({ userId: user.userId, jit }, process.env.JWT_SECRET, { expiresIn: '7 days' });
-                
+
                 await QrLogin.deleteOne({ qrToken });
-                
+
                 return res.json({
                     status: tokenData.status,
                     token: {
@@ -386,12 +416,12 @@ class AuthController {
                     }
                 });
             }
-            
+
             res.json({
                 status: tokenData.status,
                 expiresAt: tokenData.expiresAt
             });
-            
+
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
@@ -537,9 +567,9 @@ class AuthController {
         try {
             const { phone } = req.body;
             const user = await User.findOne({ phone: phone });
-            
+
             if (!user) {
-                return res.status(404).json({ message: 'User not found' }); 
+                return res.status(404).json({ message: 'User not found' });
             }
 
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -548,7 +578,7 @@ class AuthController {
             otpCache.set(phone, {
                 otp,
                 otpId,
-                expiresAt: Date.now() + 5 * 60 * 1000 
+                expiresAt: Date.now() + 5 * 60 * 1000
             });
 
             try {
@@ -570,9 +600,9 @@ class AuthController {
                 //     from: process.env.TWILIO_PHONE_NUMBER,
                 //     to: `+84${phone.substring(1)}`
                 // });
-                
+
                 // console.log('Twilio Message SID:', message.sid);
-                
+
                 // res.json({ 
                 //     message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
                 //     otpId: otpId
@@ -581,8 +611,8 @@ class AuthController {
                 console.error('SMS sending error:', smsError);
                 return res.status(500).json({ message: 'Failed to send verification code' });
             }
-        }  catch (error) {
-            res.status(500).json({ message: error.message });  
+        } catch (error) {
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -594,7 +624,7 @@ class AuthController {
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
-            
+
             const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
             if (!passwordRegex.test(newPassword)) {
                 return res.status(400).json({ message: 'Password must be at least 6 characters and contain both letters and numbers' });
@@ -605,7 +635,7 @@ class AuthController {
 
             res.json({ message: 'Password changed successfully' });
         } catch (error) {
-            res.status(500).json({ message: error.message }); 
+            res.status(500).json({ message: error.message });
         }
     }
 }
