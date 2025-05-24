@@ -9,23 +9,9 @@ const rateLimit = require('express-rate-limit');
 const twilio = require('twilio');
 const { v4: uuidv4 } = require('uuid');
 const { getSocketController } = require('../socket');
-// const SpeedSMS = require('../utils/speedsms');
-// const speedsms = new SpeedSMS(process.env.SPEEDSMS_API_KEY);
-// const SMSService = require('../utils/tingtingSMS');
-// const smsService = new SMSService(
-//     process.env.EASYSEND_USERNAME,
-//     process.env.EASYSEND_PASSWORD
-// );
-// const InfobipSMS = require('../utils/infobipSMS');
-// const infobipSMS = new InfobipSMS(
-//     '21c9830de8d5d2989b34b5c79b417605-82f89bc0-6289-4c1b-a27e-c1e39821e1e7',
-//     'd9zz5r.api.infobip.com'
-// );
-
 
 const otpCache = new Map();
 const verificationAttempts = new Map();
-const qrLoginCache = new Map();
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -173,78 +159,6 @@ class AuthController {
                 console.error('SMS sending error:', smsError);
                 return res.status(500).json({ message: 'Failed to send verification code' });
             }
-
-            // try {
-            //     console.log('Twilio Config:', {
-            //         accountSid: process.env.TWILIO_ACCOUNT_SID?.substring(0, 5) + '...',
-            //         fromNumber: process.env.TWILIO_PHONE_NUMBER,
-            //         toNumber: `+84${phone.substring(1)}`
-            //     });
-
-            //     const message = await twilioClient.messages.create({
-            //         body: `Your verification code to register Sophy is: ${otp}`,
-            //         from: process.env.TWILIO_PHONE_NUMBER,
-            //         to: `+84${phone.substring(1)}`
-            //     });
-
-            //     console.log('Twilio Message SID:', message.sid);
-
-            //     res.json({ 
-            //         message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
-            //         otpId: otpId
-            //     });
-            // } catch (smsError) {
-            //     console.error('SMS sending error:', smsError);
-            //     res.status(500).json({ message: 'Failed to send verification code' });
-            // }
-
-            // try{
-            //     const user = await speedsms.getUserInfo();
-            //     console.log('User Info:', user);
-            // } catch (error) {
-            //     console.error('Error fetching user info:', error); 
-            //     return res.status(500).json({ message: 'Failed to send verification code' });
-            // }
-            // try {
-            //     const message = `Your verification code to register Sophy is: ${otp}`;
-            //     const result = await speedsms.sendSMS(phone, message);
-
-            //     if (result.status === 'success') {
-            //         res.json({ 
-            //             message: 'Verification code sent to ' + `+84${phone.substring(1)}`,
-            //             otpId: otpId
-            //         });
-            //     } else {
-            //         throw new Error('SMS sending failed: ' + result.message);
-            //     }
-            // } catch (smsError) {
-            //     console.error('SMS sending error:', smsError);
-            //     res.status(500).json({ message: 'Failed to send verification code' });
-            // }
-
-            // try {
-            //     const message = `Your verification code to register Sophy is: ${otp}`;
-            //     await smsService.sendSMS(phone, message);
-
-            //     return res.json({
-            //         message: 'Verification code sent to ' + phone,
-            //         otpId: otpId
-            //     });
-            // } catch (smsError) {
-            //     console.error('SMS sending error:', smsError);
-            //     return res.status(500).json({ message: 'Failed to send verification code' });
-            // }
-
-            // try {
-            //     const response = await infobipSMS.sendSMS(
-            //         '0763934458',
-            //         'Your verification code is: 123456',
-            //         '447491163443'
-            //     );
-            //     console.log('SMS sent successfully:', response);
-            // } catch (error) {
-            //     console.error('Failed to send SMS:', error);
-            // }
         }
         catch (error) {
             res.status(500).json({ message: error.message });

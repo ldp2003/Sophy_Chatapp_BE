@@ -1,4 +1,3 @@
-const Notification = require('../models/Notification');
 const Conversation = require('../models/Conversation');
 const { v4: uuidv4 } = require('uuid');
 const { getSocketController } = require('../socket');

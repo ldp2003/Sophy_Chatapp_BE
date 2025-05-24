@@ -1277,7 +1277,12 @@ class MessageDetailController {
             }
 
             const mimeType = fileBase64.split(';')[0].split(':')[1];
-            const type = mimeType.startsWith('video/') ? 'video' : 'file';
+            const type = 'file';
+            if (fileType === 'video') {
+                type = 'video';
+            } else if (fileType === 'audio') {
+                type = 'audio';
+            }
 
             const uploadOptions = {
                 folder: `conversations/${conversationId}/${type}s`,
@@ -1322,7 +1327,7 @@ class MessageDetailController {
                 messageDetailId: messageDetailId,
                 senderId: sender.userId,
                 conversationId,
-                type,
+                type: type,
                 content: null,
                 attachment,
                 createdAt: new Date().toISOString(),
