@@ -11,21 +11,37 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // Thiết lập ngữ cảnh cho AI
 const SOPHY_CONTEXT = `Bạn là Sophy, một trợ lý AI thông minh cho ứng dụng chat. Đặc điểm của bạn:
-- Không được đưa ra thông tin userId của bất kỳ ai
+- Không được đưa ra userId của bất kỳ ai
 - Bạn giao tiếp bằng tiếng Việt một cách tự nhiên và thân thiện
 - Bạn giúp người dùng trò chuyện, trả lời câu hỏi và hỗ trợ các vấn đề
 - Bạn có kiến thức về văn hóa và xã hội Việt Nam
 - Bạn luôn giữ thái độ tích cực và chuyên nghiệp
-- Bạn tôn trọng quyền riêng tư của người dùng
+- Bạn tôn trọng quyền riêng tư của người dùng, nhưng cho phép người dùng biết số điện thoại của người khác nếu 2 người là bạn bè
 - Câu trả lời của bạn ngắn gọn nhưng đầy đủ thông tin
 - Khi không chắc chắn, bạn sẽ thừa nhận điều đó`;
 
 class AIController {
+    async getAllAIConversations(req, res) {
+        try {
+            const userId = req.userId;
+            const aiConversations = await AIConversation.find({ userId });
+            res.json(aiConversations); 
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách cuộc trò chuyện:', error);
+            res.status(500).json({ message: 'Có lỗi xảy ra khi lấy danh sách cuộc trò chuyện' });
+        }
+    }
     async processAIRequest(req, res) {
         try {
-            const { message, conversationId } = req.body;
+            const { message, conversationId } = req.body; /// conversationId này là id của aiConversation, không phải conversationId giữa người với người
+            // mặc định nếu ko có nhét conversationId vào thì tự trả về 1 conversationId (của ai) mới rồi trả về 
             const userId = req.userId;
-            const user = await User.findOne({ userId }).select('fullname phone');
+            const user = await User.findOne({ userId }).select('fullname phone friendList');
+
+            const friendsInfo = await Promise.all((user.friendList || []).map(async (friendId) => {
+                const friend = await User.findOne({ userId: friendId }).select('fullname phone');
+                return friend;
+            }));
 
             // Lấy thông tin cuộc trò chuyện giữa người dùng
             const userConversations = await Conversation.find({
@@ -36,17 +52,17 @@ class AIController {
                 ]
             })
             .sort({ lastChange: -1 })
-            .limit(3);
+            .limit(5);
 
              // Lấy tin nhắn cho mỗi cuộc trò chuyện
-             const conversationsWithMessages = await Promise.all(userConversations.map(async (conv) => {
+            const conversationsWithMessages = await Promise.all(userConversations.map(async (conv) => {
                 const messages = await MessageDetail.find({
                     conversationId: conv.conversationId,
                     isRecall: false,
                     hiddenFrom: { $nin: [userId] }
                 })
                 .sort({ createdAt: -1 })
-                .limit(5);
+                .limit(100);
 
                 // Lấy thông tin người tạo và người nhận
                 const [creator, receiver] = await Promise.all([
@@ -79,7 +95,7 @@ class AIController {
             if (!aiConversation) {
                 aiConversation = new AIConversation({
                     userId,
-                    conversationId: conversationId || `conv${Date.now()}`,
+                    conversationId: conversationId || `conv${Date.now()}-${userId}`,
                     messages: []
                 });
             }
@@ -90,7 +106,8 @@ ${SOPHY_CONTEXT}
 Thông tin người dùng đang tương tác:
 - Tên: ${user?.fullname || 'Chưa có tên'}
 - Số điện thoại: ${user?.phone || 'Chưa có số điện thoại'}
-- ID: ${userId}
+- Danh sách bạn bè:
+${friendsInfo.map(friend => `  - ${friend?.fullname || 'Không xác định'}${friend?.phone ? ` (${friend.phone})` : ''}`).join('\n')}
 
 Các cuộc trò chuyện gần đây của người dùng:
 ${conversationsWithMessages.map(conv => {
@@ -107,12 +124,15 @@ ${conv.messages.map(msg => {
 `}).join('\n')}
 
 Yêu cầu phân tích:
+- Không được đưa ra thông tin userId của bất kỳ ai
 - Trả lời đúng trọng tâm
 - Hãy đọc kỹ nội dung các cuộc trò chuyện
 - Phân tích context và mạch trò chuyện
 - Khi được hỏi về người trò chuyện, hãy cho biết tên của họ (nếu có)
+- Người dùng hỏi hay yêu cầu thì không nhắc đến các cuộc trò chuyện hay nội dung khác
 - Đưa ra tư vấn và gợi ý phù hợp
 - Tôn trọng quyền riêng tư của người dùng
+- Nếu không thể trả lời hoặc không tìm thấy đáp án, hãy gợi ý đến nội dung khác có thể liên quan
 
 Câu hỏi/Yêu cầu hiện tại:`;
 
@@ -143,7 +163,7 @@ Câu hỏi/Yêu cầu hiện tại:`;
 
             res.json({
                 response: aiResponse,
-                conversationId: aiConversation.conversationId
+                conversationId: aiConversation.conversationId       
             });
 
         } catch (error) {
