@@ -5,6 +5,7 @@ const conversationRoutes = require('./conversationRoutes');
 const messageRoutes = require('./messageRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const callRoutes = require('./callRoutes');
+const aiRoutes = require('./aiRoutes');
 
 const setRoutes = (app) => {
     app.use('/api/auth', authRoutes);
@@ -13,6 +14,7 @@ const setRoutes = (app) => {
     app.use('/api/messages', messageRoutes);
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/call', callRoutes);
+    app.use('/api/ai', aiRoutes);
 };
 
 module.exports = setRoutes;

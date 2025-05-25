@@ -4,10 +4,13 @@ const cors = require('cors');
 const connectDB = require('./config/database');
 const http = require('http');
 const { initializeSocket } = require('./socket');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
+
+app.use(helmet());
 
 // Middleware
 app.use(cors());
