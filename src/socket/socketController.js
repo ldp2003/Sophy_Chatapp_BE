@@ -270,6 +270,41 @@ class SocketController {
                 this.emitUserTyping(conversationId, userId, fullname);
             });
 
+            socket.on('callSignal', (data) => {
+                const receiverSocket = userSockets.get(data.receiverId);
+                if (receiverSocket) {
+                    this.io.to(receiverSocket).emit('callSignal', {
+                        signal: data.signal,
+                        from: data.from,
+                        type: data.type
+                    });
+                }
+            });
+
+            socket.on('answerCall', (data) => {
+                const callerSocket = userSockets.get(data.callerId);
+                if (callerSocket) {
+                    this.io.to(callerSocket).emit('callAccepted', {
+                        signal: data.signal,
+                        from: data.from
+                    });
+                }
+            });
+
+            socket.on('endCall', (data) => {
+                const targetSocket = userSockets.get(data.targetId);
+                if (targetSocket) {
+                    this.io.to(targetSocket).emit('callEnded');
+                }
+            });
+
+            socket.on('rejectCall', (data) => {
+                const callerSocket = userSockets.get(data.callerId);
+                if (callerSocket) {
+                    this.io.to(callerSocket).emit('callRejected');
+                }
+            });
+
         });
     }
 
@@ -293,6 +328,13 @@ class SocketController {
     emitForceLogout(userId, deviceType) {
         const userRoom = `user_${userId}`;
         this.io.to(userRoom).emit('forceLogout', { deviceType });
+    }
+
+    emitIncomingCall(callData, receiverId) {
+        const receiverSocket = userSockets.get(receiverId);
+        if (receiverSocket) {
+            this.io.to(receiverSocket).emit('incomingCall', callData);
+        }
     }
 
     emitNewConversation(receiverId, conversationData) {
