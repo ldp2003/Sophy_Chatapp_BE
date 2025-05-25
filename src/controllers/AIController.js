@@ -24,7 +24,7 @@ class AIController {
     async getAllAIConversations(req, res) {
         try {
             const userId = req.userId;
-            const aiConversations = await AIConversation.find({ userId });
+            const aiConversations = await AIConversation.find({ userId }).sort({ updatedAt: -1 });
             res.json(aiConversations); 
         } catch (error) {
             console.error('Lỗi khi lấy danh sách cuộc trò chuyện:', error);
@@ -174,8 +174,12 @@ Câu hỏi/Yêu cầu hiện tại:`;
 
     async translateText(req, res) {
         try {
-            const { text, targetLanguage } = req.body;
+            const { text, targetLanguage, messageId } = req.body;
 
+            if (!text || !targetLanguage) {
+                return res.status(400).json({ message: 'Missing required fields' });
+            }
+            
             const response = await axios.post('https://translation.googleapis.com/language/translate/v2', {
                 q: text,
                 target: targetLanguage
