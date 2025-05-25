@@ -125,14 +125,12 @@ ${conv.messages.map(msg => {
 
 Yêu cầu phân tích:
 - Không được đưa ra thông tin userId của bất kỳ ai
-- Trả lời đúng trọng tâm
-- Hãy đọc kỹ nội dung các cuộc trò chuyện
-- Phân tích context và mạch trò chuyện
-- Khi được hỏi về người trò chuyện, hãy cho biết tên của họ (nếu có)
-- Người dùng hỏi hay yêu cầu thì không nhắc đến các cuộc trò chuyện hay nội dung khác
+- Trả lời đúng trọng tâm câu hỏi
+- Không nhắc lại nội dung cuộc trò chuyện trừ khi được hỏi
+- Khi người dùng yêu cầu tìm kiếm hoặc gợi ý, hãy đưa ra gợi ý mới thay vì dựa vào context
 - Đưa ra tư vấn và gợi ý phù hợp
 - Tôn trọng quyền riêng tư của người dùng
-- Nếu không thể trả lời hoặc không tìm thấy đáp án, hãy gợi ý đến nội dung khác có thể liên quan
+- Nếu không thể trả lời hoặc không tìm thấy đáp án, hãy thừa nhận điều đó hoặc tìm kiếm thông tin liên quan
 
 Câu hỏi/Yêu cầu hiện tại:`;
 
