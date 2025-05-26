@@ -12,8 +12,10 @@ const initializeSocket = (server) => {
                 'https://web-chat-sophy.vercel.app',
                 'http://localhost:3000',       // For local development
                 'http://localhost:5173',
+                'https://localhost:3000',       // For local development
+                'https://localhost:5173',
             ],
-            methods: ["GET", "POST"],
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
             credentials: true
         },
         connectionStateRecovery: {
