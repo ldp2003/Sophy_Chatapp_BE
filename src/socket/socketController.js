@@ -169,34 +169,6 @@ class SocketController {
                 });
             });
 
-            socket.on('startCall', (data) => {
-                const { conversationId, roomID, callerId, receiverId, isVideo } = data;
-                console.log(`Start call from ${callerId} to ${receiverId}, room: ${roomID}`);
-
-                const receiverSocketId = userSockets.get(receiverId);
-                if (receiverSocketId) {
-                    this.io.to(receiverSocketId).emit('startCall', {
-                        conversationId,
-                        roomID,
-                        callerId,
-                        isVideo,
-                    });
-                } else {
-                    console.warn(`Receiver ${receiverId} not online`);
-                    socket.emit('callError', { message: 'Người nhận không trực tuyến.' });
-                }
-            });
-
-            
-
-            socket.on('endCall', (data) => {
-                const { conversationId, receiverId } = data;
-                const receiverSocketId = userSockets.get(receiverId);
-                if (receiverSocketId) {
-                    this.io.to(receiverSocketId).emit('endCall', { conversationId });
-                }
-            });
-
             socket.on('scanQrLogin', async ({ qrToken, userId }) => {
                 const session = qrLoginSessions.get(qrToken);
                 if (session) {
@@ -270,6 +242,18 @@ class SocketController {
 
             socket.on('typing', ({ conversationId, userId, fullname }) => {
                 this.emitUserTyping(conversationId, userId, fullname);
+            });
+
+            socket.on('startCall', (data) => {
+                const { conversationId, callerId, receiverId, isVideo } = data;
+                const receiverSocketId = userSockets.get(receiverId);
+                if (receiverSocketId) {
+                    this.io.to(receiverSocketId).emit('startCall', {
+                        conversationId,
+                        callerId,
+                        isVideo,
+                    });
+                }
             });
 
             socket.on('callSignal', (data) => {
