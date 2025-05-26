@@ -187,6 +187,8 @@ class SocketController {
                 }
             });
 
+            
+
             socket.on('endCall', (data) => {
                 const { conversationId, receiverId } = data;
                 const receiverSocketId = userSockets.get(receiverId);
@@ -277,6 +279,26 @@ class SocketController {
                         signal: data.signal,
                         from: data.from,
                         type: data.type
+                    });
+                }
+            });
+
+            socket.on('callOffer', (data) => {
+                const receiverSocket = userSockets.get(data.receiverId);
+                if (receiverSocket) {
+                    this.io.to(receiverSocket).emit('callOffer', {
+                        offer: data.offer,  // SDP offer
+                        callerId: socket.userId
+                    });
+                }
+            });
+
+            socket.on('iceCandidate', (data) => {
+                const targetSocket = userSockets.get(data.targetId);
+                if (targetSocket) {
+                    this.io.to(targetSocket).emit('iceCandidate', {
+                        candidate: data.candidate,
+                        from: socket.userId
                     });
                 }
             });
