@@ -6,8 +6,12 @@ let socketController = null;
 const initializeSocket = (server) => {
     const io = socketIo(server, {
         cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
+            origin: [
+                'https://web-chat-sophy-kien-thucs-projects.vercel.app/', 
+                'http://localhost:3000'        // For local development
+            ],
+            methods: ["GET", "POST"],
+            credentials: true
         },
         connectionStateRecovery: {
             maxDisconnectionDuration: 2 * 60 * 1000,

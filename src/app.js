@@ -13,7 +13,17 @@ const server = http.createServer(app);
 app.use(helmet());
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+    origin: [
+        'https://web-chat-sophy-kien-thucs-projects.vercel.app/', 
+        'http://localhost:3000',       // For local development
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
