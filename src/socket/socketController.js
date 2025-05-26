@@ -167,6 +167,10 @@ class SocketController {
                     initiatorSocket: socket.id,
                     status: 'pending'
                 });
+                console.log('QR login session initialized:', {
+                    qrToken,
+                    initiatorSocket: socket.id
+                });
             });
 
             socket.on('scanQrLogin', async ({ qrToken, userId }) => {
@@ -177,6 +181,7 @@ class SocketController {
                     session.status = 'scanned';
 
                     const user = await User.findOne({ userId }).select('fullname urlavatar');
+                    console.log('session: ', session);
 
                     this.io.to(session.initiatorSocket).emit('qrScanned', {
                         fullname: user.fullname,
