@@ -244,7 +244,6 @@ class SocketController {
                 }
             });
 
-
             socket.on('typing', ({ conversationId, userId, fullname }) => {
                 this.emitUserTyping(conversationId, userId, fullname);
             });
